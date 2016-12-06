@@ -7,7 +7,7 @@ From official document of llvmpy, building llvm-3.3 from source code is recommen
 
 `cd llvmpy`
 
-`sudo LLVM_CONFIG_PATH=/usr/local/Cellar/llvm/3.3_1/bin/llvm-config python setup.py install`
+`sudo LLVM_CONFIG_PATH=/usr/local/Cellar/llvm33/3.3_1/bin/llvm-config-3.3 python setup.py install`
 
 And run test in python shell (remind: not in the llvmpy source directory).
 
