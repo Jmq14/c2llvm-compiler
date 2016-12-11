@@ -1,0 +1,954 @@
+FileAST: 
+  Typedef: va_list, [], ['typedef']
+    TypeDecl: va_list, []
+      IdentifierType: ['int']
+  Typedef: size_t, [], ['typedef']
+    TypeDecl: size_t, []
+      IdentifierType: ['int']
+  Typedef: __builtin_va_list, [], ['typedef']
+    TypeDecl: __builtin_va_list, []
+      IdentifierType: ['int']
+  Typedef: __gnuc_va_list, [], ['typedef']
+    TypeDecl: __gnuc_va_list, []
+      IdentifierType: ['int']
+  Typedef: __int8_t, [], ['typedef']
+    TypeDecl: __int8_t, []
+      IdentifierType: ['int']
+  Typedef: __uint8_t, [], ['typedef']
+    TypeDecl: __uint8_t, []
+      IdentifierType: ['int']
+  Typedef: __int16_t, [], ['typedef']
+    TypeDecl: __int16_t, []
+      IdentifierType: ['int']
+  Typedef: __uint16_t, [], ['typedef']
+    TypeDecl: __uint16_t, []
+      IdentifierType: ['int']
+  Typedef: __int_least16_t, [], ['typedef']
+    TypeDecl: __int_least16_t, []
+      IdentifierType: ['int']
+  Typedef: __uint_least16_t, [], ['typedef']
+    TypeDecl: __uint_least16_t, []
+      IdentifierType: ['int']
+  Typedef: __int32_t, [], ['typedef']
+    TypeDecl: __int32_t, []
+      IdentifierType: ['int']
+  Typedef: __uint32_t, [], ['typedef']
+    TypeDecl: __uint32_t, []
+      IdentifierType: ['int']
+  Typedef: __int64_t, [], ['typedef']
+    TypeDecl: __int64_t, []
+      IdentifierType: ['int']
+  Typedef: __uint64_t, [], ['typedef']
+    TypeDecl: __uint64_t, []
+      IdentifierType: ['int']
+  Typedef: __int_least32_t, [], ['typedef']
+    TypeDecl: __int_least32_t, []
+      IdentifierType: ['int']
+  Typedef: __uint_least32_t, [], ['typedef']
+    TypeDecl: __uint_least32_t, []
+      IdentifierType: ['int']
+  Typedef: __s8, [], ['typedef']
+    TypeDecl: __s8, []
+      IdentifierType: ['int']
+  Typedef: __u8, [], ['typedef']
+    TypeDecl: __u8, []
+      IdentifierType: ['int']
+  Typedef: __s16, [], ['typedef']
+    TypeDecl: __s16, []
+      IdentifierType: ['int']
+  Typedef: __u16, [], ['typedef']
+    TypeDecl: __u16, []
+      IdentifierType: ['int']
+  Typedef: __s32, [], ['typedef']
+    TypeDecl: __s32, []
+      IdentifierType: ['int']
+  Typedef: __u32, [], ['typedef']
+    TypeDecl: __u32, []
+      IdentifierType: ['int']
+  Typedef: __s64, [], ['typedef']
+    TypeDecl: __s64, []
+      IdentifierType: ['int']
+  Typedef: __u64, [], ['typedef']
+    TypeDecl: __u64, []
+      IdentifierType: ['int']
+  Typedef: _LOCK_T, [], ['typedef']
+    TypeDecl: _LOCK_T, []
+      IdentifierType: ['int']
+  Typedef: _LOCK_RECURSIVE_T, [], ['typedef']
+    TypeDecl: _LOCK_RECURSIVE_T, []
+      IdentifierType: ['int']
+  Typedef: _off_t, [], ['typedef']
+    TypeDecl: _off_t, []
+      IdentifierType: ['int']
+  Typedef: __dev_t, [], ['typedef']
+    TypeDecl: __dev_t, []
+      IdentifierType: ['int']
+  Typedef: __uid_t, [], ['typedef']
+    TypeDecl: __uid_t, []
+      IdentifierType: ['int']
+  Typedef: __gid_t, [], ['typedef']
+    TypeDecl: __gid_t, []
+      IdentifierType: ['int']
+  Typedef: _off64_t, [], ['typedef']
+    TypeDecl: _off64_t, []
+      IdentifierType: ['int']
+  Typedef: _fpos_t, [], ['typedef']
+    TypeDecl: _fpos_t, []
+      IdentifierType: ['int']
+  Typedef: _ssize_t, [], ['typedef']
+    TypeDecl: _ssize_t, []
+      IdentifierType: ['int']
+  Typedef: wint_t, [], ['typedef']
+    TypeDecl: wint_t, []
+      IdentifierType: ['int']
+  Typedef: _mbstate_t, [], ['typedef']
+    TypeDecl: _mbstate_t, []
+      IdentifierType: ['int']
+  Typedef: _flock_t, [], ['typedef']
+    TypeDecl: _flock_t, []
+      IdentifierType: ['int']
+  Typedef: _iconv_t, [], ['typedef']
+    TypeDecl: _iconv_t, []
+      IdentifierType: ['int']
+  Typedef: __ULong, [], ['typedef']
+    TypeDecl: __ULong, []
+      IdentifierType: ['int']
+  Typedef: __FILE, [], ['typedef']
+    TypeDecl: __FILE, []
+      IdentifierType: ['int']
+  Typedef: ptrdiff_t, [], ['typedef']
+    TypeDecl: ptrdiff_t, []
+      IdentifierType: ['int']
+  Typedef: wchar_t, [], ['typedef']
+    TypeDecl: wchar_t, []
+      IdentifierType: ['int']
+  Typedef: __off_t, [], ['typedef']
+    TypeDecl: __off_t, []
+      IdentifierType: ['int']
+  Typedef: __pid_t, [], ['typedef']
+    TypeDecl: __pid_t, []
+      IdentifierType: ['int']
+  Typedef: __loff_t, [], ['typedef']
+    TypeDecl: __loff_t, []
+      IdentifierType: ['int']
+  Typedef: u_char, [], ['typedef']
+    TypeDecl: u_char, []
+      IdentifierType: ['int']
+  Typedef: u_short, [], ['typedef']
+    TypeDecl: u_short, []
+      IdentifierType: ['int']
+  Typedef: u_int, [], ['typedef']
+    TypeDecl: u_int, []
+      IdentifierType: ['int']
+  Typedef: u_long, [], ['typedef']
+    TypeDecl: u_long, []
+      IdentifierType: ['int']
+  Typedef: ushort, [], ['typedef']
+    TypeDecl: ushort, []
+      IdentifierType: ['int']
+  Typedef: uint, [], ['typedef']
+    TypeDecl: uint, []
+      IdentifierType: ['int']
+  Typedef: clock_t, [], ['typedef']
+    TypeDecl: clock_t, []
+      IdentifierType: ['int']
+  Typedef: time_t, [], ['typedef']
+    TypeDecl: time_t, []
+      IdentifierType: ['int']
+  Typedef: daddr_t, [], ['typedef']
+    TypeDecl: daddr_t, []
+      IdentifierType: ['int']
+  Typedef: caddr_t, [], ['typedef']
+    TypeDecl: caddr_t, []
+      IdentifierType: ['int']
+  Typedef: ino_t, [], ['typedef']
+    TypeDecl: ino_t, []
+      IdentifierType: ['int']
+  Typedef: off_t, [], ['typedef']
+    TypeDecl: off_t, []
+      IdentifierType: ['int']
+  Typedef: dev_t, [], ['typedef']
+    TypeDecl: dev_t, []
+      IdentifierType: ['int']
+  Typedef: uid_t, [], ['typedef']
+    TypeDecl: uid_t, []
+      IdentifierType: ['int']
+  Typedef: gid_t, [], ['typedef']
+    TypeDecl: gid_t, []
+      IdentifierType: ['int']
+  Typedef: pid_t, [], ['typedef']
+    TypeDecl: pid_t, []
+      IdentifierType: ['int']
+  Typedef: key_t, [], ['typedef']
+    TypeDecl: key_t, []
+      IdentifierType: ['int']
+  Typedef: ssize_t, [], ['typedef']
+    TypeDecl: ssize_t, []
+      IdentifierType: ['int']
+  Typedef: mode_t, [], ['typedef']
+    TypeDecl: mode_t, []
+      IdentifierType: ['int']
+  Typedef: nlink_t, [], ['typedef']
+    TypeDecl: nlink_t, []
+      IdentifierType: ['int']
+  Typedef: fd_mask, [], ['typedef']
+    TypeDecl: fd_mask, []
+      IdentifierType: ['int']
+  Typedef: _types_fd_set, [], ['typedef']
+    TypeDecl: _types_fd_set, []
+      IdentifierType: ['int']
+  Typedef: clockid_t, [], ['typedef']
+    TypeDecl: clockid_t, []
+      IdentifierType: ['int']
+  Typedef: timer_t, [], ['typedef']
+    TypeDecl: timer_t, []
+      IdentifierType: ['int']
+  Typedef: useconds_t, [], ['typedef']
+    TypeDecl: useconds_t, []
+      IdentifierType: ['int']
+  Typedef: suseconds_t, [], ['typedef']
+    TypeDecl: suseconds_t, []
+      IdentifierType: ['int']
+  Typedef: FILE, [], ['typedef']
+    TypeDecl: FILE, []
+      IdentifierType: ['int']
+  Typedef: fpos_t, [], ['typedef']
+    TypeDecl: fpos_t, []
+      IdentifierType: ['int']
+  Typedef: cookie_read_function_t, [], ['typedef']
+    TypeDecl: cookie_read_function_t, []
+      IdentifierType: ['int']
+  Typedef: cookie_write_function_t, [], ['typedef']
+    TypeDecl: cookie_write_function_t, []
+      IdentifierType: ['int']
+  Typedef: cookie_seek_function_t, [], ['typedef']
+    TypeDecl: cookie_seek_function_t, []
+      IdentifierType: ['int']
+  Typedef: cookie_close_function_t, [], ['typedef']
+    TypeDecl: cookie_close_function_t, []
+      IdentifierType: ['int']
+  Typedef: cookie_io_functions_t, [], ['typedef']
+    TypeDecl: cookie_io_functions_t, []
+      IdentifierType: ['int']
+  Typedef: div_t, [], ['typedef']
+    TypeDecl: div_t, []
+      IdentifierType: ['int']
+  Typedef: ldiv_t, [], ['typedef']
+    TypeDecl: ldiv_t, []
+      IdentifierType: ['int']
+  Typedef: lldiv_t, [], ['typedef']
+    TypeDecl: lldiv_t, []
+      IdentifierType: ['int']
+  Typedef: sigset_t, [], ['typedef']
+    TypeDecl: sigset_t, []
+      IdentifierType: ['int']
+  Typedef: __sigset_t, [], ['typedef']
+    TypeDecl: __sigset_t, []
+      IdentifierType: ['int']
+  Typedef: _sig_func_ptr, [], ['typedef']
+    TypeDecl: _sig_func_ptr, []
+      IdentifierType: ['int']
+  Typedef: sig_atomic_t, [], ['typedef']
+    TypeDecl: sig_atomic_t, []
+      IdentifierType: ['int']
+  Typedef: __tzrule_type, [], ['typedef']
+    TypeDecl: __tzrule_type, []
+      IdentifierType: ['int']
+  Typedef: __tzinfo_type, [], ['typedef']
+    TypeDecl: __tzinfo_type, []
+      IdentifierType: ['int']
+  Typedef: mbstate_t, [], ['typedef']
+    TypeDecl: mbstate_t, []
+      IdentifierType: ['int']
+  Typedef: sem_t, [], ['typedef']
+    TypeDecl: sem_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_t, [], ['typedef']
+    TypeDecl: pthread_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_attr_t, [], ['typedef']
+    TypeDecl: pthread_attr_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_mutex_t, [], ['typedef']
+    TypeDecl: pthread_mutex_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_mutexattr_t, [], ['typedef']
+    TypeDecl: pthread_mutexattr_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_cond_t, [], ['typedef']
+    TypeDecl: pthread_cond_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_condattr_t, [], ['typedef']
+    TypeDecl: pthread_condattr_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_key_t, [], ['typedef']
+    TypeDecl: pthread_key_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_once_t, [], ['typedef']
+    TypeDecl: pthread_once_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_rwlock_t, [], ['typedef']
+    TypeDecl: pthread_rwlock_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_rwlockattr_t, [], ['typedef']
+    TypeDecl: pthread_rwlockattr_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_spinlock_t, [], ['typedef']
+    TypeDecl: pthread_spinlock_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_barrier_t, [], ['typedef']
+    TypeDecl: pthread_barrier_t, []
+      IdentifierType: ['int']
+  Typedef: pthread_barrierattr_t, [], ['typedef']
+    TypeDecl: pthread_barrierattr_t, []
+      IdentifierType: ['int']
+  Typedef: jmp_buf, [], ['typedef']
+    TypeDecl: jmp_buf, []
+      IdentifierType: ['int']
+  Typedef: rlim_t, [], ['typedef']
+    TypeDecl: rlim_t, []
+      IdentifierType: ['int']
+  Typedef: sa_family_t, [], ['typedef']
+    TypeDecl: sa_family_t, []
+      IdentifierType: ['int']
+  Typedef: sigjmp_buf, [], ['typedef']
+    TypeDecl: sigjmp_buf, []
+      IdentifierType: ['int']
+  Typedef: stack_t, [], ['typedef']
+    TypeDecl: stack_t, []
+      IdentifierType: ['int']
+  Typedef: siginfo_t, [], ['typedef']
+    TypeDecl: siginfo_t, []
+      IdentifierType: ['int']
+  Typedef: z_stream, [], ['typedef']
+    TypeDecl: z_stream, []
+      IdentifierType: ['int']
+  Typedef: int8_t, [], ['typedef']
+    TypeDecl: int8_t, []
+      IdentifierType: ['int']
+  Typedef: uint8_t, [], ['typedef']
+    TypeDecl: uint8_t, []
+      IdentifierType: ['int']
+  Typedef: int16_t, [], ['typedef']
+    TypeDecl: int16_t, []
+      IdentifierType: ['int']
+  Typedef: uint16_t, [], ['typedef']
+    TypeDecl: uint16_t, []
+      IdentifierType: ['int']
+  Typedef: int32_t, [], ['typedef']
+    TypeDecl: int32_t, []
+      IdentifierType: ['int']
+  Typedef: uint32_t, [], ['typedef']
+    TypeDecl: uint32_t, []
+      IdentifierType: ['int']
+  Typedef: int64_t, [], ['typedef']
+    TypeDecl: int64_t, []
+      IdentifierType: ['int']
+  Typedef: uint64_t, [], ['typedef']
+    TypeDecl: uint64_t, []
+      IdentifierType: ['int']
+  Typedef: int_least8_t, [], ['typedef']
+    TypeDecl: int_least8_t, []
+      IdentifierType: ['int']
+  Typedef: uint_least8_t, [], ['typedef']
+    TypeDecl: uint_least8_t, []
+      IdentifierType: ['int']
+  Typedef: int_least16_t, [], ['typedef']
+    TypeDecl: int_least16_t, []
+      IdentifierType: ['int']
+  Typedef: uint_least16_t, [], ['typedef']
+    TypeDecl: uint_least16_t, []
+      IdentifierType: ['int']
+  Typedef: int_least32_t, [], ['typedef']
+    TypeDecl: int_least32_t, []
+      IdentifierType: ['int']
+  Typedef: uint_least32_t, [], ['typedef']
+    TypeDecl: uint_least32_t, []
+      IdentifierType: ['int']
+  Typedef: int_least64_t, [], ['typedef']
+    TypeDecl: int_least64_t, []
+      IdentifierType: ['int']
+  Typedef: uint_least64_t, [], ['typedef']
+    TypeDecl: uint_least64_t, []
+      IdentifierType: ['int']
+  Typedef: int_fast8_t, [], ['typedef']
+    TypeDecl: int_fast8_t, []
+      IdentifierType: ['int']
+  Typedef: uint_fast8_t, [], ['typedef']
+    TypeDecl: uint_fast8_t, []
+      IdentifierType: ['int']
+  Typedef: int_fast16_t, [], ['typedef']
+    TypeDecl: int_fast16_t, []
+      IdentifierType: ['int']
+  Typedef: uint_fast16_t, [], ['typedef']
+    TypeDecl: uint_fast16_t, []
+      IdentifierType: ['int']
+  Typedef: int_fast32_t, [], ['typedef']
+    TypeDecl: int_fast32_t, []
+      IdentifierType: ['int']
+  Typedef: uint_fast32_t, [], ['typedef']
+    TypeDecl: uint_fast32_t, []
+      IdentifierType: ['int']
+  Typedef: int_fast64_t, [], ['typedef']
+    TypeDecl: int_fast64_t, []
+      IdentifierType: ['int']
+  Typedef: uint_fast64_t, [], ['typedef']
+    TypeDecl: uint_fast64_t, []
+      IdentifierType: ['int']
+  Typedef: intptr_t, [], ['typedef']
+    TypeDecl: intptr_t, []
+      IdentifierType: ['int']
+  Typedef: uintptr_t, [], ['typedef']
+    TypeDecl: uintptr_t, []
+      IdentifierType: ['int']
+  Typedef: intmax_t, [], ['typedef']
+    TypeDecl: intmax_t, []
+      IdentifierType: ['int']
+  Typedef: uintmax_t, [], ['typedef']
+    TypeDecl: uintmax_t, []
+      IdentifierType: ['int']
+  Typedef: bool, [], ['typedef']
+    TypeDecl: bool, []
+      IdentifierType: ['_Bool']
+  Typedef: va_list, [], ['typedef']
+    TypeDecl: va_list, []
+      IdentifierType: ['int']
+  Decl: lessPrior, ['const'], ['static'], []
+    ArrayDecl: []
+      ArrayDecl: []
+        TypeDecl: lessPrior, ['const']
+          IdentifierType: ['int']
+        Constant: int, 6
+    InitList: 
+      InitList: 
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 0
+        Constant: int, 1
+      InitList: 
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 0
+        Constant: int, 1
+      InitList: 
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 0
+        Constant: int, 1
+      InitList: 
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 0
+        Constant: int, 1
+      InitList: 
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 0
+        Constant: int, 1
+      InitList: 
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 1
+        Constant: int, 0
+        Constant: int, 1
+  Decl: op, [], [], []
+    TypeDecl: op, []
+      Struct: SqStack
+        Decl: val, [], [], []
+          ArrayDecl: []
+            TypeDecl: val, []
+              IdentifierType: ['double']
+            Constant: int, 1000
+        Decl: cur, [], [], []
+          TypeDecl: cur, []
+            IdentifierType: ['int']
+  Decl: value, [], [], []
+    TypeDecl: value, []
+      Struct: SqStack
+        Decl: val, [], [], []
+          ArrayDecl: []
+            TypeDecl: val, []
+              IdentifierType: ['double']
+            Constant: int, 1000
+        Decl: cur, [], [], []
+          TypeDecl: cur, []
+            IdentifierType: ['int']
+  Typedef: SqStack, [], ['typedef']
+    TypeDecl: SqStack, []
+      Struct: SqStack
+  FuncDef: 
+    Decl: init, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: stk, [], [], []
+            PtrDecl: []
+              TypeDecl: stk, []
+                IdentifierType: ['SqStack']
+        TypeDecl: init, []
+          IdentifierType: ['void']
+    Compound: 
+      Assignment: =
+        StructRef: ->
+          ID: stk
+          ID: cur
+        Constant: int, 0
+  FuncDef: 
+    Decl: push, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: stk, [], [], []
+            PtrDecl: []
+              TypeDecl: stk, []
+                IdentifierType: ['SqStack']
+          Decl: n, [], [], []
+            TypeDecl: n, []
+              IdentifierType: ['double']
+        TypeDecl: push, []
+          IdentifierType: ['void']
+    Compound: 
+      Assignment: =
+        ArrayRef: 
+          StructRef: ->
+            ID: stk
+            ID: val
+          UnaryOp: p++
+            StructRef: ->
+              ID: stk
+              ID: cur
+        ID: n
+  FuncDef: 
+    Decl: pop, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: stk, [], [], []
+            PtrDecl: []
+              TypeDecl: stk, []
+                IdentifierType: ['SqStack']
+        TypeDecl: pop, []
+          IdentifierType: ['double']
+    Compound: 
+      Return: 
+        ArrayRef: 
+          StructRef: ->
+            ID: stk
+            ID: val
+          UnaryOp: --
+            StructRef: ->
+              ID: stk
+              ID: cur
+  FuncDef: 
+    Decl: top, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: stk, [], [], []
+            PtrDecl: []
+              TypeDecl: stk, []
+                IdentifierType: ['SqStack']
+        TypeDecl: top, []
+          IdentifierType: ['double']
+    Compound: 
+      Return: 
+        ArrayRef: 
+          StructRef: ->
+            ID: stk
+            ID: val
+          BinaryOp: -
+            StructRef: ->
+              ID: stk
+              ID: cur
+            Constant: int, 1
+  FuncDef: 
+    Decl: isEmpty, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: stk, [], [], []
+            PtrDecl: []
+              TypeDecl: stk, []
+                IdentifierType: ['SqStack']
+        TypeDecl: isEmpty, []
+          IdentifierType: ['int']
+    Compound: 
+      Return: 
+        BinaryOp: ==
+          StructRef: ->
+            ID: stk
+            ID: cur
+          Constant: int, 0
+  FuncDef: 
+    Decl: indexOf, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: ch, [], [], []
+            TypeDecl: ch, []
+              IdentifierType: ['char']
+        TypeDecl: indexOf, []
+          IdentifierType: ['int']
+    Compound: 
+      Switch: 
+        ID: ch
+        Compound: 
+          Case: 
+            Constant: char, '+'
+            Return: 
+              Constant: int, 0
+          Case: 
+            Constant: char, '-'
+            Return: 
+              Constant: int, 1
+          Case: 
+            Constant: char, '*'
+            Return: 
+              Constant: int, 2
+          Case: 
+            Constant: char, '/'
+            Return: 
+              Constant: int, 3
+          Case: 
+            Constant: char, '('
+            Return: 
+              Constant: int, 4
+          Case: 
+            Constant: char, ')'
+            Return: 
+              Constant: int, 5
+          Default: 
+            Return: 
+              UnaryOp: -
+                Constant: int, 1
+  FuncDef: 
+    Decl: sendOp, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: op, [], [], []
+            TypeDecl: op, []
+              IdentifierType: ['char']
+        TypeDecl: sendOp, []
+          IdentifierType: ['void']
+    Compound: 
+      If: 
+        BinaryOp: ||
+          BinaryOp: ==
+            ID: op
+            Constant: char, '('
+          BinaryOp: ==
+            ID: op
+            Constant: char, ')'
+        Return: 
+      Decl: right, [], [], []
+        TypeDecl: right, []
+          IdentifierType: ['double']
+        FuncCall: 
+          ID: pop
+          ExprList: 
+            UnaryOp: &
+              ID: value
+      Switch: 
+        ID: op
+        Compound: 
+          Case: 
+            Constant: char, '+'
+            FuncCall: 
+              ID: push
+              ExprList: 
+                UnaryOp: &
+                  ID: value
+                BinaryOp: +
+                  FuncCall: 
+                    ID: pop
+                    ExprList: 
+                      UnaryOp: &
+                        ID: value
+                  ID: right
+            Break: 
+          Case: 
+            Constant: char, '-'
+            FuncCall: 
+              ID: push
+              ExprList: 
+                UnaryOp: &
+                  ID: value
+                BinaryOp: -
+                  FuncCall: 
+                    ID: pop
+                    ExprList: 
+                      UnaryOp: &
+                        ID: value
+                  ID: right
+            Break: 
+          Case: 
+            Constant: char, '*'
+            FuncCall: 
+              ID: push
+              ExprList: 
+                UnaryOp: &
+                  ID: value
+                BinaryOp: *
+                  FuncCall: 
+                    ID: pop
+                    ExprList: 
+                      UnaryOp: &
+                        ID: value
+                  ID: right
+            Break: 
+          Case: 
+            Constant: char, '/'
+            FuncCall: 
+              ID: push
+              ExprList: 
+                UnaryOp: &
+                  ID: value
+                BinaryOp: /
+                  FuncCall: 
+                    ID: pop
+                    ExprList: 
+                      UnaryOp: &
+                        ID: value
+                  ID: right
+            Break: 
+  FuncDef: 
+    Decl: main, [], [], []
+      FuncDecl: 
+        ParamList: 
+          Decl: argc, [], [], []
+            TypeDecl: argc, []
+              IdentifierType: ['int']
+          Decl: argv, ['const'], [], []
+            ArrayDecl: []
+              PtrDecl: []
+                TypeDecl: argv, ['const']
+                  IdentifierType: ['char']
+        TypeDecl: main, []
+          IdentifierType: ['int']
+    Compound: 
+      FuncCall: 
+        ID: init
+        ExprList: 
+          UnaryOp: &
+            ID: value
+      FuncCall: 
+        ID: init
+        ExprList: 
+          UnaryOp: &
+            ID: op
+      Decl: str, [], [], []
+        ArrayDecl: []
+          TypeDecl: str, []
+            IdentifierType: ['char']
+          Constant: int, 101
+      FuncCall: 
+        ID: scanf
+        ExprList: 
+          Constant: string, "%s"
+          ID: str
+      Decl: i, [], [], []
+        TypeDecl: i, []
+          IdentifierType: ['int']
+        Constant: int, 0
+      While: 
+        ArrayRef: 
+          ID: str
+          ID: i
+        Compound: 
+          If: 
+            FuncCall: 
+              ID: isdigit
+              ExprList: 
+                ArrayRef: 
+                  ID: str
+                  ID: i
+            Compound: 
+              Decl: j, [], [], []
+                TypeDecl: j, []
+                  IdentifierType: ['int']
+                ID: i
+              For: 
+                BinaryOp: &&
+                  ArrayRef: 
+                    ID: str
+                    ID: i
+                  FuncCall: 
+                    ID: isdigit
+                    ExprList: 
+                      ArrayRef: 
+                        ID: str
+                        ID: i
+                UnaryOp: p++
+                  ID: i
+                EmptyStatement: 
+              Decl: buff, [], [], []
+                ArrayDecl: []
+                  TypeDecl: buff, []
+                    IdentifierType: ['char']
+                  Constant: int, 11
+                InitList: 
+              FuncCall: 
+                ID: memcpy
+                ExprList: 
+                  ID: buff
+                  BinaryOp: +
+                    ID: str
+                    ID: j
+                  BinaryOp: -
+                    ID: i
+                    ID: j
+              FuncCall: 
+                ID: push
+                ExprList: 
+                  UnaryOp: &
+                    ID: value
+                  FuncCall: 
+                    ID: atof
+                    ExprList: 
+                      ID: buff
+              Continue: 
+          While: 
+            BinaryOp: &&
+              UnaryOp: !
+                FuncCall: 
+                  ID: isEmpty
+                  ExprList: 
+                    UnaryOp: &
+                      ID: op
+              ArrayRef: 
+                ArrayRef: 
+                  ID: lessPrior
+                  FuncCall: 
+                    ID: indexOf
+                    ExprList: 
+                      ArrayRef: 
+                        ID: str
+                        ID: i
+                FuncCall: 
+                  ID: indexOf
+                  ExprList: 
+                    Cast: 
+                      Typename: None, []
+                        TypeDecl: None, []
+                          IdentifierType: ['char']
+                      FuncCall: 
+                        ID: top
+                        ExprList: 
+                          UnaryOp: &
+                            ID: op
+            FuncCall: 
+              ID: sendOp
+              ExprList: 
+                Cast: 
+                  Typename: None, []
+                    TypeDecl: None, []
+                      IdentifierType: ['char']
+                  FuncCall: 
+                    ID: pop
+                    ExprList: 
+                      UnaryOp: &
+                        ID: op
+          If: 
+            BinaryOp: &&
+              BinaryOp: ==
+                ArrayRef: 
+                  ID: str
+                  ID: i
+                Constant: char, ')'
+              BinaryOp: ==
+                Cast: 
+                  Typename: None, []
+                    TypeDecl: None, []
+                      IdentifierType: ['char']
+                  FuncCall: 
+                    ID: top
+                    ExprList: 
+                      UnaryOp: &
+                        ID: op
+                Constant: char, '('
+            Compound: 
+              FuncCall: 
+                ID: pop
+                ExprList: 
+                  UnaryOp: &
+                    ID: op
+              UnaryOp: p++
+                ID: i
+              Continue: 
+          If: 
+            BinaryOp: &&
+              BinaryOp: ==
+                ArrayRef: 
+                  ID: str
+                  ID: i
+                Constant: char, '-'
+              BinaryOp: ||
+                UnaryOp: !
+                  ID: i
+                BinaryOp: &&
+                  UnaryOp: !
+                    FuncCall: 
+                      ID: isdigit
+                      ExprList: 
+                        ArrayRef: 
+                          ID: str
+                          BinaryOp: -
+                            ID: i
+                            Constant: int, 1
+                  BinaryOp: !=
+                    ArrayRef: 
+                      ID: str
+                      BinaryOp: -
+                        ID: i
+                        Constant: int, 1
+                    Constant: char, ')'
+            FuncCall: 
+              ID: push
+              ExprList: 
+                UnaryOp: &
+                  ID: value
+                Constant: int, 0
+          FuncCall: 
+            ID: push
+            ExprList: 
+              UnaryOp: &
+                ID: op
+              ArrayRef: 
+                ID: str
+                UnaryOp: p++
+                  ID: i
+      While: 
+        UnaryOp: !
+          FuncCall: 
+            ID: isEmpty
+            ExprList: 
+              UnaryOp: &
+                ID: op
+        FuncCall: 
+          ID: sendOp
+          ExprList: 
+            Cast: 
+              Typename: None, []
+                TypeDecl: None, []
+                  IdentifierType: ['char']
+              FuncCall: 
+                ID: pop
+                ExprList: 
+                  UnaryOp: &
+                    ID: op
+      FuncCall: 
+        ID: printf
+        ExprList: 
+          Constant: string, "%.2f\n"
+          FuncCall: 
+            ID: pop
+            ExprList: 
+              UnaryOp: &
+                ID: value
+      Return: 
+        Constant: int, 0
