@@ -27,4 +27,4 @@ if __name__ == "__main__":
     ast = parse_file(filename, use_cpp=True,
             cpp_path='clang',
             cpp_args=['-E', r'-Iutils/fake_libc_include'])
-    ast.show()
+    ast.show(attrnames=True,nodenames=True,showcoord=True)

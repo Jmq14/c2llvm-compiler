@@ -283,6 +283,7 @@ class CGenerator(object):
         return s
 
     def visit_FuncDecl(self, n):
+        print "visited FuncDecl"
         return self._generate_type(n)
 
     def _generate_struct_union(self, n, name):

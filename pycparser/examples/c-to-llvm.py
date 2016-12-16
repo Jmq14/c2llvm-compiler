@@ -4,8 +4,7 @@
 # Example of using pycparser.c_generator, serving as a simplistic translator
 # from C to AST and back to C.
 #
-# Copyright (C) 2008-2015, Eli Bendersky
-# License: BSD
+#
 #------------------------------------------------------------------------------
 from __future__ import print_function
 import sys
@@ -15,32 +14,31 @@ import sys
 #
 sys.path.extend(['.', '..'])
 
-from pycparser import parse_file, c_parser, llvm_generator
+from pycparser import parse_file, c_parser, llvmlite_generator
 
 
 def translate_to_c(filename):
     """ Simply use the c_generator module to emit a parsed AST.
     """
     ast = parse_file(filename, use_cpp=True)
-    generator = llvm_generator.LLVMGenerator()
+    generator = llvmlite_generator.LLVMGenerator()
     print(generator.visit(ast))
 
 
 def _zz_test_translate():
     # internal use
     src = r'''
-
-int main(int a, int b)
-{
-    return 0;
+int f(int a) {
+return 0;
 }
 '''
     parser = c_parser.CParser()
     ast = parser.parse(src)
     ast.show()
-    generator = llvm_generator.LLVMGenerator()
 
-    print(generator.visit(ast))
+    generator = llvmlite_generator.LLVMGenerator()
+
+    print(generator.generate(ast))
 
     # tracing the generator for debugging
     #~ import trace

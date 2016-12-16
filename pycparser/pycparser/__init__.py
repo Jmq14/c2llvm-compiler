@@ -90,4 +90,4 @@ def parse_file(filename, use_cpp=False, cpp_path='cpp', cpp_args='',
 
     if parser is None:
         parser = CParser()
-    return parser.parse(text, filename)
+    return parser.parse(text, filename, debuglevel=2)
