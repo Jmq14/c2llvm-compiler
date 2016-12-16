@@ -1,12 +1,17 @@
 #------------------------------------------------------------------------------
 # llvm_generator.py
 #
-# LLVM IR generator from pycparser AST nodes.
+# LLVM IR generator from pycparser AST nodes based on llvmpy.
+#
+# [Important!]
+# This file has been deprecated and is no longer being actively developed.
+# Please direct to "llvmlite_generate.py" which generate llvm ir
+# based on llvm lite.
 #------------------------------------------------------------------------------
 
 from __future__ import print_function
 from . import c_ast
-from llvm.core import Module, Constant, Type, Function, Builder, FCMP_ULT
+from llvm.core import Module, Constant, Type, Function, Builder, Value, FCMP_ULT
 
 # The LLVM module, which holds all the IR code.
 g_llvm_module = Module.new('my jit')
@@ -30,16 +35,66 @@ class LLVMGenerator(object):
     def __init__(self):
         pass
 
+    def generate(self, node):
+        self.visit(node)
+        return g_llvm_module
+
+    #---------- visit methods ---------
+
     def visit(self, node):
         method = 'visit_' + node.__class__.__name__
         return getattr(self, method, self.generic_visit)(node)
 
     def generic_visit(self, node):
         #~ print('generic:', type(node))
-        if node is None:
-            return ''
-        else:
-            return ''.join(self.visit(c) for c_name, c in node.children())
+        raise RuntimeError("not implement node: " + node.__class__.__name__)
+
+    def visit_Decl(self, n, no_type=False):
+        # no_type is used when a Decl is part of a DeclList, where the type is
+        # explicitly only for the first declaration in a list.
+        #
+
+        return self._generate_decl(n)
+
+    def visit_FuncDecl(self, n):
+        return self._generate_func_decl(n)
+        #return self._generate_type(n)
+
+    def visit_FuncDef(self, n):
+        return self._generate_func(n)
+
+    def visit_FileAST(self, n):
+        for ext in n.ext:
+            if isinstance(ext, c_ast.FuncDef):
+                self.visit(ext)
+            elif isinstance(ext, c_ast.Pragma):
+                pass
+            else:
+                pass
+
+    def visit_Compound(self, n):
+        if n.block_items:
+            for stmt in n.block_items:
+                self.visit(stmt)
+
+    def visit_Assignment(self, n):
+        pass
+
+    def visit_statement(self, n):
+        return self.visit(n)
+
+    def visit_EmptyStatement(self, n):
+        pass
+
+    def visit_ParamList(self, n):
+        args_type = []
+        args_name = []
+        for arg in n.params:
+            a = self.visit(arg)
+            args_type.append(a['dtype'])
+            args_name.append(a['dname'])
+
+        return args_type, args_name
 
     def visit_Constant(self, n):
         typ = self._generate_llvm_type([n.type])
@@ -52,19 +107,26 @@ class LLVMGenerator(object):
     def visit_IdentifierType(self, n):
         return self._generate_type(n)
 
-    def visit_Decl(self, n, no_type=False):
-        # no_type is used when a Decl is part of a DeclList, where the type is
-        # explicitly only for the first declaration in a list.
-        #
-        s = n.name if no_type else self._generate_decl(n)
-        if n.bitsize: s += ' : ' + self.visit(n.bitsize)
-        if n.init:
-            s += ' = ' + self._visit_expr(n.init)
-        return s
+    def visit_Return(self, n):
+        return g_llvm_builder.ret(self.visit(n.expr))
 
-    def visit_FuncDef(self, n):
+    def visit_BinaryOp(self, n):
+        if n.op == '+':
+            g_llvm_builder.add(self.visit(n.left), self.visit(n.right), n.name)
+
+    def visit_ID(self, n):
+        # ID is the variables
+        # TODO: check if th variable is in the scope and return the name
+        return n.name
+
+
+    #---------- custom generation methods ---------
+
+    def _generate_func(self, n):
         g_named_values.clear()
         function = self.visit(n.decl)
+
+        print(function)
 
         block = function.append_basic_block('entry')
 
@@ -83,53 +145,11 @@ class LLVMGenerator(object):
             raise
         return function
 
-    def visit_FileAST(self, n):
-        s = ''
-        for ext in n.ext:
-            if isinstance(ext, c_ast.FuncDef):
-                s = self.visit(ext)
-            elif isinstance(ext, c_ast.Pragma):
-                s = self.visit(ext) + '\n'
-            else:
-                s = self.visit(ext) + ';\n'
-            ## TODO: how to concat?
-        return s
-
-    def visit_Compound(self, n):
-        if n.block_items:
-            for stmt in n.block_items:
-                return self.visit(stmt)
-                # TODO: how to concat??
-
-    def visit_EmptyStatement(self, n):
-        pass
-
-    def visit_ParamList(self, n):
-        pass
-
-    def visit_Return(self, n):
-        #global g_llvm_builder
-        return g_llvm_builder.ret(self.visit(n.expr))
-
-    def visit_FuncDecl(self, n):
-        return self._generate_func(n)
-        #return self._generate_type(n)
-
-
-    def _generate_stmt(self, n, add_indent=False):
-        """ Generation from a statement node. This method exists as a wrapper
-            for individual visit_* methods to handle different treatment of
-            some statements in this context.
-        """
-        return self.visit(n)
-
-    def _generate_func(self, n):
+    def _generate_func_decl(self, n):
         args_type = []
         args_name = []
-        for arg in n.args.params:
-            a = self.visit(arg)
-            args_type.append(a['dtype'])
-            args_name.append(a['dname'])
+        if n.args:
+            args_type, args_name = self.visit(n.args)
 
         f = self._generate_decl(n)
         funct_type = Type.function(f['dtype'], args_type, False)
@@ -137,6 +157,7 @@ class LLVMGenerator(object):
         function = Function.new(
             g_llvm_module, funct_type, f['dname'])
 
+        #print("generated function declaration:", f['dname'])
 
         # Set names for all arguments and add them to the variables symbol table.
         for arg, arg_name in zip(function.args, args_name):
@@ -149,6 +170,12 @@ class LLVMGenerator(object):
     def _generate_decl(self, n):
         """ Generation from a Decl node.
         """
+
+        # if n.bitsize:
+        #     self.visit(n.bitsize)
+        # if n.init:
+        #     self.visit(n.init)
+
         return self._generate_type(n.type)
 
     def _generate_llvm_type(self, id):
@@ -169,8 +196,8 @@ class LLVMGenerator(object):
         #~ print(n, modifiers)
 
         if typ == c_ast.TypeDecl:
-            a = {'dname': n.declname, 'dtype': self.visit(n.type)}
-            return a
+            return {'dname': n.declname, 'dtype': self.visit(n.type)}
+            # return Value()
 
         elif typ == c_ast.Decl:
             return self._generate_decl(n.type)
@@ -182,9 +209,12 @@ class LLVMGenerator(object):
             return self._generate_llvm_type(n.names)
             
         elif typ == c_ast.FuncDecl:
-            return self._generate_func(n)
+            return self._generate_func_decl(n)
 
         elif typ in (c_ast.ArrayDecl, c_ast.PtrDecl):
             return self._generate_type(n.type, modifiers + [n])
         else:
             return self.visit(n)
+
+    def _generate_assignment(self, n):
+        pass
