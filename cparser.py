@@ -450,20 +450,29 @@ class CParser(object):
         """ function_definition : declaration_specifiers declarator declaration_list_opt compound_statement
         """
         spec = p[1]
-        decl = dict(decl=p[2], init=None)
-        type = decl['decl']
+        typename = spec['type']
+
+        decl = p[2]
+        type = decl
         while not isinstance(type, ast.TypeDecl):
             type = type.type
+
+        type.type = ast.IdentifierType(
+            [name for id in typename for name in id.names],
+            coord=typename[0].coord)
+        type.quals = spec['qual']
 
         declaration = ast.Decl(
             name=type.declname,
             quals=spec['qual'],
             storage=spec['storage'],
             funcspec=spec['function'],
-            type=decl['decl'],
-            init=decl.get('init'),
-            bitsize=decl.get('bitsize'),
-            coord=decl['decl'].coord)
+            type=p[2],
+            init=None,
+            bitsize=None,
+            coord=p[2].coord)
+
+        self._add_identifier(declaration.name, declaration.coord)
 
         p[0] = ast.FuncDef(
             decl=declaration,
@@ -559,21 +568,27 @@ class CParser(object):
         """ parameter_declaration   : declaration_specifiers declarator
         """
         spec = p[1]
+        typename = spec['type']
 
-        decl = dict(decl=p[2])
-        type = decl['decl']
+        decl = p[2]
+        type = decl
         while not isinstance(type, ast.TypeDecl):
             type = type.type
+
+        type.type = ast.IdentifierType(
+            [name for id in typename for name in id.names],
+            coord=typename[0].coord)
+        type.quals = spec['qual']
 
         declaration = ast.Decl(
             name=type.declname,
             quals=spec['qual'],
             storage=spec['storage'],
             funcspec=spec['function'],
-            type=decl['decl'],
-            init=decl.get('init'),
-            bitsize=decl.get('bitsize'),
-            coord=decl['decl'].coord)
+            type=p[2],
+            init=None,
+            bitsize=None,
+            coord=p[2].coord)
 
         self._add_identifier(declaration.name, declaration.coord)
         p[0] = declaration

@@ -47,3 +47,4 @@ if __name__ == "__main__":
         filename = 'test.c'
 
     ast = parse_file(filename)
+    ast.show(attrnames=True,nodenames=True)
