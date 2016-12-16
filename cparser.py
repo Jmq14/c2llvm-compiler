@@ -33,13 +33,6 @@ class CParser(object):
         self.cparser = yacc.yacc(module=self,
                                  start='translation_unit_or_empty',
                                  debug=True)
-        rules_with_opt = [
-            'assignment_expression',
-            'expression',
-            'type_qualifier_list',
-        ]
-        for rule in rules_with_opt:
-            self._create_opt_rule(rule)
         self._scope_stack = [dict()]
 
     def parse(self, text, filename='', debuglevel=0):
@@ -99,14 +92,16 @@ class CParser(object):
             self._parse_error(
                 "Non-typedef %r previously declared as typedef "
                 "in this scope" % name, coord)
-        self._scope_stack[-1][name] = False
+        self._scope_stack[-1][name] = True
 
     def _lex_on_lbrace_func(self):
         self._scope_stack.append(dict())
+        print('stack push')
 
     def _lex_on_rbrace_func(self):
         assert len(self._scope_stack) > 1
         self._scope_stack.pop()
+        print('stack pop')
 
     # To understand what's going on here, read sections A.8.5 and
     # A.8.6 of K&R2 very carefully.
@@ -290,30 +285,27 @@ class CParser(object):
         p[0] = self._add_declaration_specifier(p[2], p[1], 'storage')
     
     def p_decl_body(self, p):
-        """ decl_body : declaration_specifiers init_declarator_list_opt
+        """ decl_body : declaration_specifiers init_declarator
         """
         spec = p[1]
+        decl = p[2]
 
-        # p[2] (init_declarator_list_opt) is either a list or None
-        #
-        if p[2] is None:
-            # By the standard, you must have at least one declarator unless
-            # declaring a structure tag, a union tag, or the members of an
-            # enumeration.
-            #
-            ty = spec['type']
-            if len(ty) == 1 and isinstance(ty[0], ast.Struct):
-                decls = [ast.Decl(
-                    name=None,
-                    quals=spec['qual'],
-                    storage=spec['storage'],
-                    funcspec=spec['function'],
-                    type=ty[0],
-                    init=None,
-                    bitsize=None,
-                    coord=ty[0].coord)]
+        type = decl['decl']
+        while not isinstance(type, ast.TypeDecl):
+            type = type.type
 
-        p[0] = decls
+        declaration = ast.Decl(
+            name=type.declname,
+            quals=spec['qual'],
+            storage=spec['storage'],
+            funcspec=spec['function'],
+            type=decl['decl'],
+            init=decl.get('init'),
+            bitsize=decl.get('bitsize'),
+            coord=decl['decl'].coord)
+
+        self._add_identifier(declaration.name,declaration.coord)
+        p[0] = declaration
         
     def p_direct_declarator_1(self, p):
         """ direct_declarator   : ID
@@ -356,7 +348,7 @@ class CParser(object):
                             | identifier_list COMMA identifier
         """
         if len(p) == 2: # single parameter
-            p[0] = c_ast.ParamList([p[1]], p[1].coord)
+            p[0] = ast.ParamList([p[1]], p[1].coord)
         else:
             p[1].params.append(p[3])
             p[0] = p[1]
