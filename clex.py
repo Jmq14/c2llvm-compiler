@@ -5,7 +5,6 @@ from ply.lex import TOKEN
 
 
 class CLexer(object):
-
     def __init__(self, on_lbrace_func, on_rbrace_func):
         self.on_lbrace_func = on_lbrace_func
         self.on_rbrace_func = on_rbrace_func
@@ -26,34 +25,56 @@ class CLexer(object):
         'static': 'STATIC',
         'const': 'CONST',
         'int': 'INT',
+        'char': 'CHAR',
+        'case': 'CASE',
+        'switch': 'SWITCH',
+        'break': 'BREAK',
+        'return': 'RETURN',
+        'continue': 'CONTINUE',
+        'default': 'DEFAULT',
+        'if': 'IF',
+        'else': 'ELSE',
         'auto': 'AUTO',
     }
 
     tokens = list(reserved.values()) + ['ID',
-                                'LBRACKET','RBRACKET',
-                                'LBRACE', 'RBRACE',
-                                'INT_CONST_DEC','INT_CONST_OCT',
-                                'EQUALS',
-                                'COMMA',
-                                'SEMI']
+                                        'LBRACKET', 'RBRACKET',
+                                        'LBRACE', 'RBRACE',
+                                        'LPAREN', 'RPAREN',
+                                        'INT_CONST_DEC', 'INT_CONST_OCT', 'CHAR_CONST',
+                                        'EQUALS',
+                                        'MINUS',
+                                        'COMMA', 'SEMI', 'COLON',
+                                        ]
 
     t_EQUALS = r'='
+    t_MINUS = r'-'
 
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_LPAREN = r'\('
+    t_RPAREN = r'\)'
     t_COMMA = r','
     t_SEMI = r';'
+    t_COLON = r':'
 
     identifier = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
     integer_suffix_opt = r'(([uU]ll)|([uU]LL)|(ll[uU]?)|(LL[uU]?)|([uU][lL])|([lL][uU]?)|[uU])?'
     decimal_constant = '(0' + integer_suffix_opt + ')|([1-9][0-9]*' + integer_suffix_opt + ')'
     octal_constant = '0[0-7]*' + integer_suffix_opt
 
+    simple_escape = r"""([a-zA-Z._~!=&\^\-\\?'"])"""
+    decimal_escape = r"""(\d+)"""
+    hex_escape = r"""(x[0-9a-fA-F]+)"""
+
+    escape_sequence = r"""(\\(""" + simple_escape + '|' + decimal_escape + '|' + hex_escape + '))'
+    cconst_char = r"""([^'\\\n]|""" + escape_sequence + ')'
+    char_const = "'" + cconst_char + "'"
 
     @TOKEN(identifier)
     def t_ID(self, t):
         t.type = self.reserved.get(t.value, "ID")
-        #if t.type == 'ID':
+        # if t.type == 'ID':
         #    t.type = "TYPEID"
         return t
 
@@ -69,9 +90,17 @@ class CLexer(object):
     def t_LBRACE(self, t):
         self.on_lbrace_func()
         return t
+
     @TOKEN(r'\}')
     def t_RBRACE(self, t):
         self.on_rbrace_func()
+        return t
+
+    # Must come before bad_char_const, to prevent it from
+    # catching valid char constants as invalid
+    #
+    @TOKEN(char_const)
+    def t_CHAR_CONST(self, t):
         return t
 
     # Define a rule so we can track line numbers
@@ -79,7 +108,7 @@ class CLexer(object):
         r'\n+'
         t.lexer.lineno += len(t.value)
 
-    def t_comment(self,t):
+    def t_comment(self, t):
         r'/\*(.|\n)*?\*/'
         t.lexer.lineno += t.value.count('\n')
 

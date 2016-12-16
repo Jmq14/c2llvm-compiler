@@ -526,3 +526,32 @@ class Typename(Node):
         return tuple(nodelist)
 
     attr_names = ('name', 'quals',)
+
+
+class FuncDecl(Node):
+    def __init__(self, args, type, coord=None):
+        self.args = args
+        self.type = type
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        if self.args is not None: nodelist.append(("args", self.args))
+        if self.type is not None: nodelist.append(("type", self.type))
+        return tuple(nodelist)
+
+    attr_names = ()
+
+
+class Default(Node):
+    def __init__(self, stmts, coord=None):
+        self.stmts = stmts
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        for i, child in enumerate(self.stmts or []):
+            nodelist.append(("stmts[%d]" % i, child))
+        return tuple(nodelist)
+
+    attr_names = ()
