@@ -349,7 +349,7 @@ class CParser(object):
 
     def p_identifier(self, p):
         """ identifier  : ID """
-        p[0] = c_ast.ID(p[1], self._coord(p.lineno(1)))
+        p[0] = ast.ID(p[1], self._coord(p.lineno(1)))
 
     def p_identifier_list(self, p):
         """ identifier_list : identifier
