@@ -29,7 +29,15 @@ def _zz_test_translate():
     # internal use
     src = r'''
 int f(int a) {
-return 0;
+    int ans;
+    int b;
+    b = 3;
+    ans = a + b;
+    return ans;
+}
+
+int main(){
+    int a = 1;
 }
 '''
     parser = c_parser.CParser()
