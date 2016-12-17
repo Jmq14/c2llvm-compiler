@@ -19,6 +19,7 @@ g_llvm_builder = None
 # and what their LLVM representation is.
 g_named_argument = {}
 g_named_memory = {}
+g_named_function = {}
 
 class LLVMGenerator(object):
     def __init__(self):
@@ -46,19 +47,48 @@ class LLVMGenerator(object):
         """
             Declare and allocate the declared variables.
             n:
-                type -> FuncDecl | TypeDecl
+                type -> FuncDecl | TypeDecl | ArrayDecl
                 init -> expr
         """
         tpy = type(n.type)
         if tpy == c_ast.FuncDecl:
             return self.visit(n.type)
-        elif tpy == c_ast.TypeDecl:
+        elif tpy in {c_ast.TypeDecl, c_ast.ArrayDecl}:
             self.visit(n.type)
             # allocate
             if n.init:
                 self.visit(n.init)
                 # Here we don't handle the default values given 
                 # to function arguments
+
+
+    def visit_ArrayDecl(self, n, status=0):
+        """
+            Allocate new array.
+        """
+        d = self.get_type(n.type)
+        nam = d['dname']
+        tpy = d['dtype']
+
+        if nam in g_named_memory or nam in g_named_argument:
+            raise RuntimeError("Duplicate variable declaration!")
+
+        g_named_memory[nam] = g_llvm_builder.alloca(ir.ArrayType(tpy, int(n.dim.value)), name=nam)
+
+    def visit_ArrayRef(self, n, status=0):
+        """
+            Return variable in an array.
+            status == 0 -> get pointer
+            status == 1 -> get value
+        """
+        arr = self.visit(n.name)
+        index = self.visit(n.subscript)
+        zero = ir.Constant(ir.IntType(32), 0)
+        ele = g_llvm_builder.gep(arr, [zero, index], inbounds=True)
+        if status == 0:
+            return ele
+        elif status == 1:
+            return g_llvm_builder.load(ele)
 
     def visit_FuncDef(self, n, status=0):
         """
@@ -104,6 +134,9 @@ class LLVMGenerator(object):
             # Add arguments to variable symbol table.
             g_named_argument[arg_name] = arg
 
+        global g_named_function
+        g_named_function[f['dname']] = function
+
         return function
 
     def visit_ParamList(self, n, status=0):
@@ -130,7 +163,6 @@ class LLVMGenerator(object):
             c = ir.Constant(ir.DoubleType(), n.value)
         else:
             raise RuntimeError("not implement constant type: " + n.type)
-
         return c
 
     def visit_IdentifierType(self, n, status=0):
@@ -145,8 +177,8 @@ class LLVMGenerator(object):
     def visit_ID(self, n, status=0):
         """
             Return variable.
-            status = 0 -> get pointer
-            status = 1 -> get value 
+            status == 0 -> get pointer
+            status ==1 -> get value
         """
         if n.name in g_named_memory:
             if status == 0:
@@ -161,7 +193,7 @@ class LLVMGenerator(object):
 
     def visit_TypeDecl(self, n, status=0):
         """
-            Allocate new vadiables.
+            Allocate new variables.
         """
         ### Allocate and store all the arguments
         typ = self.visit(n.type)
@@ -176,16 +208,39 @@ class LLVMGenerator(object):
         if n.op == '=':
             # lvalue -> ans
             # rvalue -> binary op
-            ans = self.visit(n.lvalue)
-            g_llvm_builder.store(self.visit(n.rvalue), ans)
+            ans = self.visit(n.lvalue, 0)
+            right = self.visit(n.rvalue, 1)
+            g_llvm_builder.store(right, ans)
 
     def visit_BinaryOp(self, n, status=0):
+        left = self.visit(n.left, 1)
+        right = self.visit(n.right, 1)
         if n.op == '+':
-            left = self.visit(n.left, 1)
-            right = self.visit(n.right, 1)
             return g_llvm_builder.add(left, right)
+        elif n.op == '-':
+            return g_llvm_builder.sub(left, right)
+        elif n.op == '*':
+            return g_llvm_builder.mul(left, right)
+        elif n.op == '/':
+            return g_llvm_builder.sdiv(left, right)
         else:
-            pass
+            raise RuntimeError("not implement binary operator!")
+
+    def visit_FuncCall(self, n, status=0):
+        func_name = n.name.name
+        if func_name not in g_named_function:
+            raise RuntimeError("Undefined function: " + func_name)
+        function = g_named_function[func_name]
+        return g_llvm_builder.call(function, self.visit(n.args))
+
+    def visit_ExprList(self, n, status=0):
+        """
+            Return a list of FuncCall arguments
+        """
+        arg_list = []
+        for arg in n.exprs:
+            arg_list.append(self.visit(arg))
+        return arg_list
 
     def visit_Return(self, n, status=0):
         g_llvm_builder.ret(self.visit(n.expr))
