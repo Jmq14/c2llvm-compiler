@@ -61,10 +61,10 @@ class LLVMGenerator(object):
         if tpy == c_ast.FuncDecl:
             return self.visit(n.type)
         elif tpy in {c_ast.TypeDecl, c_ast.ArrayDecl}:
-            self.visit(n.type)
+            d = self.visit(n.type)
             # allocate
             if n.init:
-                self.visit(n.init)
+                g_llvm_builder.store(self.visit(n.init), d)
                 # Here we don't handle the default values given 
                 # to function arguments
 
@@ -80,6 +80,7 @@ class LLVMGenerator(object):
         self.declaration_verify(nam)
 
         g_named_memory[nam] = g_llvm_builder.alloca(ir.ArrayType(typ, int(n.dim.value)), name=nam)
+        return g_named_memory[nam]
 
     def visit_ArrayRef(self, n, status=0):
         """
@@ -209,7 +210,8 @@ class LLVMGenerator(object):
 
         self.declaration_verify(nam)
 
-        g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam) 
+        g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam)
+        return g_named_memory[nam]
 
     def visit_Assignment(self, n, status=0):
         if n.op == '=':
