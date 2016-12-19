@@ -267,15 +267,18 @@ class LLVMGenerator(object):
                 self.visit(n.iftrue)
 
     def visit_While(self, n, status=0):
+        while_cmp = g_current_function.append_basic_block()
         while_entry = g_current_function.append_basic_block()
         while_end = g_current_function.append_basic_block()
+
+        g_llvm_builder.position_at_end(while_cmp)
+        c = self.visit(n.cond)
+        g_llvm_builder.cbranch(c, while_entry, while_end)
+
         g_llvm_builder.position_at_end(while_entry)
-        with g_llvm_builder.if_else(self.visit(n.cond)) as (then, otherwise):
-            with then:
-                self.visit(n.stmt)
-                g_llvm_builder.goto_block(while_entry)
-            with otherwise:
-                g_llvm_builder.goto_block(while_end)
+        self.visit(n.stmt)
+        g_llvm_builder.branch(while_cmp)
+
         g_llvm_builder.position_at_end(while_end)
 
     def visit_Return(self, n, status=0):
