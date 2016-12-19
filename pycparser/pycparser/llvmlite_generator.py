@@ -21,6 +21,9 @@ g_named_argument = {}
 g_named_memory = {}
 g_named_function = {}
 
+# current function
+g_current_function = None
+
 class LLVMGenerator(object):
     def __init__(self):
         pass
@@ -100,9 +103,11 @@ class LLVMGenerator(object):
         global g_named_argument
         global g_named_memory
         global g_llvm_builder
+        global g_current_function
 
         g_named_argument.clear()
         function = self.visit(n.decl)
+        g_current_function = function
 
         if n.body:
             block = function.append_basic_block(name="entry")
@@ -227,6 +232,10 @@ class LLVMGenerator(object):
             return g_llvm_builder.icmp_signed(n.op, left, right)
         elif n.op == '===':
             return g_llvm_builder.icmp_signed('==', left, right)
+        elif n.op == '&&':
+            return g_llvm_builder.and_(left, right)
+        elif n.op == '||':
+            return g_llvm_builder.or_(left, right)
         else:
             raise RuntimeError("not implement binary operator!")
 
@@ -257,6 +266,17 @@ class LLVMGenerator(object):
             with g_llvm_builder.if_then(self.visit(n.cond)):
                 self.visit(n.iftrue)
 
+    def visit_While(self, n, status=0):
+        while_entry = g_current_function.append_basic_block()
+        while_end = g_current_function.append_basic_block()
+        g_llvm_builder.position_at_end(while_entry)
+        with g_llvm_builder.if_else(self.visit(n.cond)) as (then, otherwise):
+            with then:
+                self.visit(n.stmt)
+                g_llvm_builder.goto_block(while_entry)
+            with otherwise:
+                g_llvm_builder.goto_block(while_end)
+        g_llvm_builder.position_at_end(while_end)
 
     def visit_Return(self, n, status=0):
         g_llvm_builder.ret(self.visit(n.expr))
