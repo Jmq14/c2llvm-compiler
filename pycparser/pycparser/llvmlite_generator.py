@@ -60,7 +60,7 @@ class LLVMGenerator(object):
         tpy = type(n.type)
         if tpy == c_ast.FuncDecl:
             return self.visit(n.type)
-        elif tpy in {c_ast.TypeDecl, c_ast.ArrayDecl}:
+        elif tpy in {c_ast.TypeDecl, c_ast.ArrayDecl, c_ast.PtrDecl}:
             d = self.visit(n.type)
             # allocate
             if n.init:
@@ -213,6 +213,14 @@ class LLVMGenerator(object):
         g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam)
         return g_named_memory[nam]
 
+    def visit_PtrDecl(self, n, status=0):
+        d = self.get_type(n.type)
+        nam = d['dname']
+        typ = d['dtype']
+        ptr = ir.PointerType(typ)
+        g_named_memory[nam] = g_llvm_builder.alloca(ptr, name=nam)
+        return g_named_memory[nam]
+
     def visit_Assignment(self, n, status=0):
         if n.op == '=':
             # lvalue -> ans
@@ -242,6 +250,11 @@ class LLVMGenerator(object):
             return g_llvm_builder.or_(left, right)
         else:
             raise RuntimeError("not implement binary operator!")
+
+    def visit_UnaryOp(self, n, status=0):
+        if (n.op == '&'):
+            return self.visit(n.expr, 0)
+        pass
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
@@ -345,4 +358,7 @@ class LLVMGenerator(object):
                 or name in g_named_argument.keys() \
                 or name in g_global_variable.keys():
             raise RuntimeError("Duplicate variable declaration!")
+
+    def reference_verify(self, name, type):
+        pass
 
