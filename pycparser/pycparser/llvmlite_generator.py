@@ -208,7 +208,7 @@ class LLVMGenerator(object):
         nam = n.declname
 
         self.declaration_verify(nam)
-        
+
         g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam) 
 
     def visit_Assignment(self, n, status=0):
@@ -294,29 +294,33 @@ class LLVMGenerator(object):
         return getattr(self, method, self.generic_visit)(node, status)
 
     def global_visit_Decl(self, n, status=0):
-        self.global_visit(n.type)
+        g = self.global_visit(n.type)
         # allocate
         if n.init:
-            self.global_visit(n.init)
+            g.initializer = self.global_visit(n.init, n.name)
         pass
 
     def global_visit_ArrayDecl(self, n, status=0):
         d = self.get_type(n.type)
         nam = d['dname']
         typ = d['dtype']
-
         g_global_variable[nam] = \
             ir.GlobalVariable(g_llvm_module, ir.ArrayType(typ, int(n.dim.value)), name=nam)
+        return g_global_variable[nam]
 
     def global_visit_TypeDecl(self, n, status=0):
         typ = self.visit(n.type)
         nam = n.declname
         g_global_variable[nam] = \
             ir.GlobalVariable(g_llvm_module, typ, name=nam)
+        return g_global_variable[nam]
 
     def global_visit_InitList(self, n, status=0):
-        for ele in n.exprs:
-            pass
+        # arr = ir.Constant(ir.ArrayType(typ, int(len(n.exprs)))
+        return ir.Constant.literal_array([self.visit(ele) for ele in n.exprs])
+
+    def global_visit_Constant(self, n, status=0):
+        return self.visit(n)
 
     # ---------- custom methods ---------
 
