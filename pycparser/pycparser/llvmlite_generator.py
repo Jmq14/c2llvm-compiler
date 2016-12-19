@@ -20,6 +20,7 @@ g_llvm_builder = None
 g_named_argument = {}
 g_named_memory = {}
 g_named_function = {}
+g_global_variable = {}
 
 # current function
 g_current_function = None
@@ -44,7 +45,10 @@ class LLVMGenerator(object):
 
     def visit_FileAST(self, n, status=0):
         for ext in n.ext:
-            self.visit(ext)
+            if isinstance(ext, c_ast.FuncDef):
+                self.visit(ext)
+            if isinstance(ext, c_ast.Decl):
+                self.global_visit(ext)
 
     def visit_Decl(self, n, status=0):
         """
@@ -71,12 +75,11 @@ class LLVMGenerator(object):
         """
         d = self.get_type(n.type)
         nam = d['dname']
-        tpy = d['dtype']
+        typ = d['dtype']
 
-        if nam in g_named_memory or nam in g_named_argument:
-            raise RuntimeError("Duplicate variable declaration!")
+        self.declaration_verify(nam)
 
-        g_named_memory[nam] = g_llvm_builder.alloca(ir.ArrayType(tpy, int(n.dim.value)), name=nam)
+        g_named_memory[nam] = g_llvm_builder.alloca(ir.ArrayType(typ, int(n.dim.value)), name=nam)
 
     def visit_ArrayRef(self, n, status=0):
         """
@@ -204,9 +207,8 @@ class LLVMGenerator(object):
         typ = self.visit(n.type)
         nam = n.declname
 
-        if nam in g_named_memory or nam in g_named_argument:
-            raise RuntimeError("Duplicate variable declaration!")
-
+        self.declaration_verify(nam)
+        
         g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam) 
 
     def visit_Assignment(self, n, status=0):
@@ -284,6 +286,38 @@ class LLVMGenerator(object):
     def visit_Return(self, n, status=0):
         g_llvm_builder.ret(self.visit(n.expr))
 
+
+    # ---------- global variable declaration --------
+
+    def global_visit(self, node, status=0):
+        method = 'global_visit_' + node.__class__.__name__
+        return getattr(self, method, self.generic_visit)(node, status)
+
+    def global_visit_Decl(self, n, status=0):
+        self.global_visit(n.type)
+        # allocate
+        if n.init:
+            self.global_visit(n.init)
+        pass
+
+    def global_visit_ArrayDecl(self, n, status=0):
+        d = self.get_type(n.type)
+        nam = d['dname']
+        typ = d['dtype']
+
+        g_global_variable[nam] = \
+            ir.GlobalVariable(g_llvm_module, ir.ArrayType(typ, int(n.dim.value)), name=nam)
+
+    def global_visit_TypeDecl(self, n, status=0):
+        typ = self.visit(n.type)
+        nam = n.declname
+        g_global_variable[nam] = \
+            ir.GlobalVariable(g_llvm_module, typ, name=nam)
+
+    def global_visit_InitList(self, n, status=0):
+        for ele in n.exprs:
+            pass
+
     # ---------- custom methods ---------
 
     def get_type(self, n, status=0):
@@ -295,4 +329,14 @@ class LLVMGenerator(object):
 
         return {'dname': n.declname, 'dtype': self.visit(n.type)}
 
+    def extern_function(self, n):
+        pass
+
+    # ---------- check & handle error ----------
+
+    def declaration_verify(self, name):
+        if name in g_named_memory.keys() \
+                or name in g_named_argument.keys() \
+                or name in g_global_variable.keys():
+            raise RuntimeError("Duplicate variable declaration!")
 
