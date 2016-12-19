@@ -60,9 +60,8 @@ class Node(object):
 
 
 class FileAST(Node):
-    def __init__(self, ext, coord=None):
+    def __init__(self, ext):
         self.ext = ext
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -74,32 +73,27 @@ class FileAST(Node):
 
 
 class Decl(Node):
-    def __init__(self, name, quals, storage, funcspec, type, init, bitsize, coord=None):
+    def __init__(self, name, quals, storage, spec, type, init):
         self.name = name
         self.quals = quals
         self.storage = storage
-        self.funcspec = funcspec
+        self.spec = spec
         self.type = type
         self.init = init
-        self.bitsize = bitsize
-        self.coord = coord
 
     def children(self):
         nodelist = []
         if self.type is not None: nodelist.append(("type", self.type))
         if self.init is not None: nodelist.append(("init", self.init))
-        if self.bitsize is not None: nodelist.append(("bitsize", self.bitsize))
         return tuple(nodelist)
 
-    attr_names = ('name', 'quals', 'storage', 'funcspec',)
+    attr_names = ('name', 'quals', 'storage', 'spec',)
 
 
 class ArrayDecl(Node):
-    def __init__(self, type, dim, dim_quals, coord=None):
+    def __init__(self, type, dim):
         self.type = type
         self.dim = dim
-        self.dim_quals = dim_quals
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -107,14 +101,13 @@ class ArrayDecl(Node):
         if self.dim is not None: nodelist.append(("dim", self.dim))
         return tuple(nodelist)
 
-    attr_names = ('dim_quals',)
+    attr_names = ()
 
 
 class Constant(Node):
-    def __init__(self, type, value, coord=None):
+    def __init__(self, type, value):
         self.type = type
         self.value = value
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -123,38 +116,20 @@ class Constant(Node):
     attr_names = ('type', 'value',)
 
 
-class Typedef(Node):
-    def __init__(self, name, quals, storage, type, coord=None):
-        self.name = name
-        self.quals = quals
-        self.storage = storage
-        self.type = type
-        self.coord = coord
-
-    def children(self):
-        nodelist = []
-        if self.type is not None: nodelist.append(("type", self.type))
-        return tuple(nodelist)
-
-    attr_names = ('name', 'quals', 'storage',)
-
-
 class IdentifierType(Node):
-    def __init__(self, names, coord=None):
-        self.names = names
-        self.coord = coord
+    def __init__(self, name):
+        self.name = name
 
     def children(self):
         nodelist = []
         return tuple(nodelist)
 
-    attr_names = ('names',)
+    attr_names = ('name',)
 
 
 class InitList(Node):
-    def __init__(self, exprs, coord=None):
+    def __init__(self, exprs):
         self.exprs = exprs
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -166,10 +141,9 @@ class InitList(Node):
 
 
 class Struct(Node):
-    def __init__(self, name, decls, coord=None):
+    def __init__(self, name, decls):
         self.name = name
         self.decls = decls
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -180,25 +154,9 @@ class Struct(Node):
     attr_names = ('name',)
 
 
-class TypeDecl(Node):
-    def __init__(self, declname, quals, type, coord=None):
-        self.declname = declname
-        self.quals = quals
-        self.type = type
-        self.coord = coord
-
-    def children(self):
-        nodelist = []
-        if self.type is not None: nodelist.append(("type", self.type))
-        return tuple(nodelist)
-
-    attr_names = ('declname', 'quals',)
-
-
 class ParamList(Node):
-    def __init__(self, params, coord=None):
+    def __init__(self, params):
         self.params = params
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -210,10 +168,9 @@ class ParamList(Node):
 
 
 class PtrDecl(Node):
-    def __init__(self, quals, type, coord=None):
+    def __init__(self, quals, type):
         self.quals = quals
         self.type = type
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -224,9 +181,8 @@ class PtrDecl(Node):
 
 
 class Compound(Node):
-    def __init__(self, block_items, coord=None):
+    def __init__(self, block_items):
         self.block_items = block_items
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -238,11 +194,10 @@ class Compound(Node):
 
 
 class Assignment(Node):
-    def __init__(self, op, lvalue, rvalue, coord=None):
+    def __init__(self, op, lvalue, rvalue):
         self.op = op
         self.lvalue = lvalue
         self.rvalue = rvalue
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -254,11 +209,10 @@ class Assignment(Node):
 
 
 class StructRef(Node):
-    def __init__(self, name, type, field, coord=None):
+    def __init__(self, name, type, field):
         self.name = name
         self.type = type
         self.field = field
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -270,9 +224,8 @@ class StructRef(Node):
 
 
 class ID(Node):
-    def __init__(self, name, coord=None):
+    def __init__(self, name):
         self.name = name
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -282,11 +235,10 @@ class ID(Node):
 
 
 class FuncDef(Node):
-    def __init__(self, decl, param_decls, body, coord=None):
+    def __init__(self, decl, param_decls, body):
         self.decl = decl
         self.param_decls = param_decls
         self.body = body
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -300,11 +252,10 @@ class FuncDef(Node):
 
 
 class If(Node):
-    def __init__(self, cond, iftrue, iffalse, coord=None):
+    def __init__(self, cond, iftrue, iffalse):
         self.cond = cond
         self.iftrue = iftrue
         self.iffalse = iffalse
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -317,11 +268,10 @@ class If(Node):
 
 
 class BinaryOp(Node):
-    def __init__(self, op, left, right, coord=None):
+    def __init__(self, op, left, right):
         self.op = op
         self.left = left
         self.right = right
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -333,9 +283,8 @@ class BinaryOp(Node):
 
 
 class Return(Node):
-    def __init__(self, expr, coord=None):
+    def __init__(self, expr):
         self.expr = expr
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -346,9 +295,8 @@ class Return(Node):
 
 
 class ExprList(Node):
-    def __init__(self, exprs, coord=None):
+    def __init__(self, exprs):
         self.exprs = exprs
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -360,10 +308,9 @@ class ExprList(Node):
 
 
 class UnaryOp(Node):
-    def __init__(self, op, expr, coord=None):
+    def __init__(self, op, expr):
         self.op = op
         self.expr = expr
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -374,10 +321,9 @@ class UnaryOp(Node):
 
 
 class Switch(Node):
-    def __init__(self, cond, stmt, coord=None):
+    def __init__(self, cond, stmt):
         self.cond = cond
         self.stmt = stmt
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -389,10 +335,9 @@ class Switch(Node):
 
 
 class Case(Node):
-    def __init__(self, expr, stmts, coord=None):
+    def __init__(self, expr, stmts):
         self.expr = expr
         self.stmts = stmts
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -405,10 +350,9 @@ class Case(Node):
 
 
 class FuncCall(Node):
-    def __init__(self, name, args, coord=None):
+    def __init__(self, name, args):
         self.name = name
         self.args = args
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -420,8 +364,8 @@ class FuncCall(Node):
 
 
 class Break(Node):
-    def __init__(self, coord=None):
-        self.coord = coord
+    def __init__(self):
+        pass
 
     def children(self):
         return ()
@@ -430,10 +374,9 @@ class Break(Node):
 
 
 class While(Node):
-    def __init__(self, cond, stmt, coord=None):
+    def __init__(self, cond, stmt):
         self.cond = cond
         self.stmt = stmt
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -445,10 +388,9 @@ class While(Node):
 
 
 class ArrayRef(Node):
-    def __init__(self, name, subscript, coord=None):
+    def __init__(self, name, subscript):
         self.name = name
         self.subscript = subscript
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -460,12 +402,11 @@ class ArrayRef(Node):
 
 
 class For(Node):
-    def __init__(self, init, cond, next, stmt, coord=None):
+    def __init__(self, init, cond, next, stmt):
         self.init = init
         self.cond = cond
         self.next = next
         self.stmt = stmt
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -479,8 +420,8 @@ class For(Node):
 
 
 class EmptyStatement(Node):
-    def __init__(self, coord=None):
-        self.coord = coord
+    def __init__(self):
+        pass
 
     def children(self):
         return ()
@@ -489,8 +430,8 @@ class EmptyStatement(Node):
 
 
 class Continue(Node):
-    def __init__(self, coord=None):
-        self.coord = coord
+    def __init__(self):
+        pass
 
     def children(self):
         return ()
@@ -499,10 +440,9 @@ class Continue(Node):
 
 
 class Cast(Node):
-    def __init__(self, to_type, expr, coord=None):
+    def __init__(self, to_type, expr):
         self.to_type = to_type
         self.expr = expr
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -514,11 +454,10 @@ class Cast(Node):
 
 
 class Typename(Node):
-    def __init__(self, name, quals, type, coord=None):
+    def __init__(self, name, quals, type):
         self.name = name
         self.quals = quals
         self.type = type
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -529,10 +468,9 @@ class Typename(Node):
 
 
 class FuncDecl(Node):
-    def __init__(self, args, type, coord=None):
+    def __init__(self, args, type):
         self.args = args
         self.type = type
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -542,11 +480,21 @@ class FuncDecl(Node):
 
     attr_names = ()
 
+class PtrDecl(Node):
+    def __init__(self, quals, type):
+        self.quals = quals
+        self.type = type
+
+    def children(self):
+        nodelist = []
+        if self.type is not None: nodelist.append(("type", self.type))
+        return tuple(nodelist)
+
+    attr_names = ('quals',)
 
 class Default(Node):
-    def __init__(self, stmts, coord=None):
+    def __init__(self, stmts):
         self.stmts = stmts
-        self.coord = coord
 
     def children(self):
         nodelist = []
@@ -555,3 +503,7 @@ class Default(Node):
         return tuple(nodelist)
 
     attr_names = ()
+
+
+
+

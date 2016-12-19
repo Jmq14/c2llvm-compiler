@@ -21,6 +21,9 @@ class CLexer(object):
         self.last_token = self.lexer.token()
         return self.last_token
 
+    def lineno(self):
+        return self.lexer.lineno
+
     reserved = {
         'static': 'STATIC',
         'const': 'CONST',
@@ -33,30 +36,100 @@ class CLexer(object):
         'continue': 'CONTINUE',
         'default': 'DEFAULT',
         'if': 'IF',
+        'while': 'WHILE',
         'else': 'ELSE',
         'auto': 'AUTO',
+        'struct': 'STRUCT',
     }
 
     tokens = list(reserved.values()) + ['ID',
-                                        'LBRACKET', 'RBRACKET',
-                                        'LBRACE', 'RBRACE',
-                                        'LPAREN', 'RPAREN',
                                         'INT_CONST_DEC', 'INT_CONST_OCT', 'CHAR_CONST',
-                                        'EQUALS',
-                                        'MINUS',
-                                        'COMMA', 'SEMI', 'COLON',
+                                        # String literals
+                                        'STRING_LITERAL',
+                                        # Operators
+        'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD',
+        'OR', 'AND', 'NOT', 'XOR', 'LSHIFT', 'RSHIFT',
+        'LOR', 'LAND', 'LNOT',
+        'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+
+        # Assignment
+        'EQUALS', 'TIMESEQUAL', 'DIVEQUAL', 'MODEQUAL',
+        'PLUSEQUAL', 'MINUSEQUAL',
+        'LSHIFTEQUAL','RSHIFTEQUAL', 'ANDEQUAL', 'XOREQUAL',
+        'OREQUAL',
+
+        # Increment/decrement
+        'PLUSPLUS', 'MINUSMINUS',
+
+        # Structure dereference (->)
+        'ARROW',
+
+        # Conditional operator (?)
+        'CONDOP',
+
+        # Delimeters
+        'LPAREN', 'RPAREN',         # ( )
+        'LBRACKET', 'RBRACKET',     # [ ]
+        'LBRACE', 'RBRACE',         # { }
+        'COMMA', 'PERIOD',          # . ,
+        'SEMI', 'COLON',            # ; :
                                         ]
 
-    t_EQUALS = r'='
+    # Operators
+    t_PLUS = r'\+'
     t_MINUS = r'-'
+    t_TIMES = r'\*'
+    t_DIVIDE = r'/'
+    t_MOD = r'%'
+    t_OR = r'\|'
+    t_AND = r'&'
+    t_NOT = r'~'
+    t_XOR = r'\^'
+    t_LSHIFT = r'<<'
+    t_RSHIFT = r'>>'
+    t_LOR = r'\|\|'
+    t_LAND = r'&&'
+    t_LNOT = r'!'
+    t_LT = r'<'
+    t_GT = r'>'
+    t_LE = r'<='
+    t_GE = r'>='
+    t_EQ = r'=='
+    t_NE = r'!='
 
-    t_LBRACKET = r'\['
-    t_RBRACKET = r'\]'
+    # Assignment operators
+    t_EQUALS = r'='
+    t_TIMESEQUAL = r'\*='
+    t_DIVEQUAL = r'/='
+    t_MODEQUAL = r'%='
+    t_PLUSEQUAL = r'\+='
+    t_MINUSEQUAL = r'-='
+    t_LSHIFTEQUAL = r'<<='
+    t_RSHIFTEQUAL = r'>>='
+    t_ANDEQUAL = r'&='
+    t_OREQUAL = r'\|='
+    t_XOREQUAL = r'\^='
+
+    # Increment/decrement
+    t_PLUSPLUS = r'\+\+'
+    t_MINUSMINUS = r'--'
+
+    # ->
+    t_ARROW = r'->'
+
+    # ?
+    t_CONDOP = r'\?'
+
+    # Delimeters
     t_LPAREN = r'\('
     t_RPAREN = r'\)'
+    t_LBRACKET = r'\['
+    t_RBRACKET = r'\]'
     t_COMMA = r','
+    t_PERIOD = r'\.'
     t_SEMI = r';'
     t_COLON = r':'
+
 
     identifier = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
     integer_suffix_opt = r'(([uU]ll)|([uU]LL)|(ll[uU]?)|(LL[uU]?)|([uU][lL])|([lL][uU]?)|[uU])?'
@@ -70,6 +143,12 @@ class CLexer(object):
     escape_sequence = r"""(\\(""" + simple_escape + '|' + decimal_escape + '|' + hex_escape + '))'
     cconst_char = r"""([^'\\\n]|""" + escape_sequence + ')'
     char_const = "'" + cconst_char + "'"
+
+    # string literals (K&R2: A.2.6)
+    string_char = r"""([^"\\\n]|""" + escape_sequence + ')'
+    string_literal = '"' + string_char + '*"'
+
+    t_STRING_LITERAL = string_literal
 
     @TOKEN(identifier)
     def t_ID(self, t):
