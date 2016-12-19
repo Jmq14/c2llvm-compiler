@@ -223,6 +223,10 @@ class LLVMGenerator(object):
             return g_llvm_builder.mul(left, right)
         elif n.op == '/':
             return g_llvm_builder.sdiv(left, right)
+        elif n.op in {'<', '<=', '==', '!=', '>=', '>'}:
+            return g_llvm_builder.icmp_signed(n.op, left, right)
+        elif n.op == '===':
+            return g_llvm_builder.icmp_signed('==', left, right)
         else:
             raise RuntimeError("not implement binary operator!")
 
@@ -241,6 +245,18 @@ class LLVMGenerator(object):
         for arg in n.exprs:
             arg_list.append(self.visit(arg))
         return arg_list
+
+    def visit_If(self, n, status=0):
+        if n.iffalse:
+            with g_llvm_builder.if_else(self.visit(n.cond)) as (then, otherwise):
+                with then:
+                    self.visit(n.iftrue)
+                with otherwise:
+                    self.visit(n.iffalse)
+        else:
+            with g_llvm_builder.if_then(self.visit(n.cond)):
+                self.visit(n.iftrue)
+
 
     def visit_Return(self, n, status=0):
         g_llvm_builder.ret(self.visit(n.expr))
