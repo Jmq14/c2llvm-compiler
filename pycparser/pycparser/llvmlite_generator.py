@@ -21,6 +21,7 @@ g_named_argument = {}
 g_named_memory = {}
 g_named_function = {}
 g_global_variable = {}
+g_type_define = {}
 
 # current function
 g_current_function = None
@@ -61,13 +62,15 @@ class LLVMGenerator(object):
         if tpy == c_ast.FuncDecl:
             return self.visit(n.type)
         elif tpy in {c_ast.TypeDecl, c_ast.ArrayDecl, c_ast.PtrDecl}:
-            d = self.visit(n.type)
+            d = self.get_decl(n)
+            nam = d['dname']
+            typ = d['dtype']
+            g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam)
             # allocate
             if n.init:
                 g_llvm_builder.store(self.visit(n.init), d)
                 # Here we don't handle the default values given 
                 # to function arguments
-
 
     def visit_ArrayDecl(self, n, status=0):
         """
@@ -152,7 +155,7 @@ class LLVMGenerator(object):
         args_type = []
         args_name = []
         for arg in n.params:
-            a = self.get_type(arg.type)
+            a = self.get_decl(arg)
             args_type.append(a['dtype'])
             args_name.append(a['dname'])
 
@@ -177,7 +180,9 @@ class LLVMGenerator(object):
     def visit_IdentifierType(self, n, status=0):
         i = n.names
         if i[0] == 'int':
-            return ir.IntType(32)
+            return ir.IntType(32);
+        if i[0] == 'char':
+            return ir.IntType(8);
         elif i[0] == 'void':
             return ir.VoidType()
         else:
@@ -301,6 +306,26 @@ class LLVMGenerator(object):
     def visit_Return(self, n, status=0):
         g_llvm_builder.ret(self.visit(n.expr))
 
+    def visit_Struct(self, n, status=0):
+        context = g_llvm_module.context
+        st = context.get_identified_type(n.name)
+        return st
+
+    def visit_StructRef(self, n, status=0):
+        if n.type == '->':
+            s = self.visit(n.name)
+
+            context = g_llvm_module.context
+            st_name = s.type.pointee.name
+            st_field = n.field.name
+            st = context.get_identified_type(st_name)
+            if st_field not in g_type_define[st_name]:
+                raise RuntimeError("Field not defined: " + st_field)
+
+            zero = ir.Constant(ir.IntType(32), 0)
+            index = ir.Constant(ir.IntType(32), g_type_define[st_name].index(st_field))
+            ele = g_llvm_builder.gep(s, [zero, index], inbounds=True)
+        return ele
 
     # ---------- global variable declaration --------
 
@@ -324,11 +349,20 @@ class LLVMGenerator(object):
         return g_global_variable[nam]
 
     def global_visit_TypeDecl(self, n, status=0):
-        typ = self.visit(n.type)
-        nam = n.declname
-        g_global_variable[nam] = \
-            ir.GlobalVariable(g_llvm_module, typ, name=nam)
-        return g_global_variable[nam]
+        if isinstance(n.type, c_ast.Struct):
+            typ = self.global_visit(n.type)
+            if n.declname:
+                nam = n.declname
+                g_global_variable[nam] = \
+                    ir.GlobalVariable(g_llvm_module, typ, name=nam)
+                return g_global_variable[nam]
+            return None
+        else:
+            typ = self.visit(n.type)
+            nam = n.declname
+            g_global_variable[nam] = \
+                ir.GlobalVariable(g_llvm_module, typ, name=nam)
+            return g_global_variable[nam]
 
     def global_visit_InitList(self, n, status=0):
         # arr = ir.Constant(ir.ArrayType(typ, int(len(n.exprs)))
@@ -337,9 +371,31 @@ class LLVMGenerator(object):
     def global_visit_Constant(self, n, status=0):
         return self.visit(n)
 
+    def global_visit_Struct(self, n, status=0):
+        context = g_llvm_module.context
+        st = context.get_identified_type(n.name)
+        elements = [self.get_decl(it) for it in n.decls]
+        types = [ele['dtype'] for ele in elements]
+        g_type_define[n.name] = [ele['dname'] for ele in elements]
+        st.set_body(*types)
+        return st
+
     # ---------- custom methods ---------
 
-    def get_type(self, n, status=0):
+    def get_decl(self, n):
+        """
+            type(n) should be Decl or subclass of Decl
+        """
+        if isinstance(n, c_ast.PtrDecl):
+            return ir.PointerType(self.get_decl(n.type))
+        if isinstance(n, c_ast.ArrayDecl):
+            return ir.ArrayType(self.get_decl(n.type), int(n.dim.value))
+        if isinstance(n, c_ast.TypeDecl):
+            return self.visit(n.type)
+        if isinstance(n, c_ast.Decl):
+            return {'dname': n.name, 'dtype': self.get_decl(n.type)}
+
+    def get_type(self, n):
         """
             type(n) should be TypeDecl
         """
