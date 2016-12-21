@@ -193,6 +193,16 @@ class LLVMGenerator(object):
             c = ir.Constant(ir.FloatType(), n.value)
         elif n.type == 'double':
             c = ir.Constant(ir.DoubleType(), n.value)
+        elif n.type == 'string':
+            typ = ir.ArrayType(ir.IntType(8), len(n.value))
+            # TODO: prevent duplicate global name!
+            tmp = ir.GlobalVariable(g_llvm_module, typ, name='.str')
+            tmp.initializer = ir.Constant(typ, bytearray(n.value))
+            tmp.global_constant = True
+
+            g_global_variable['.str'] = tmp
+            zero = ir.Constant(ir.IntType(32), 0)
+            return g_llvm_builder.gep(tmp, [zero, zero], inbounds=True)
         else:
             raise RuntimeError("not implement constant type: " + n.type)
         return c
@@ -220,6 +230,7 @@ class LLVMGenerator(object):
                     return g_named_memory[n.name]
                 elif status == 1:
                     return g_llvm_builder.load(g_named_memory[n.name])
+
             elif n.name in g_global_variable:
                 if status == 0:
                     return g_global_variable[n.name]
@@ -318,9 +329,11 @@ class LLVMGenerator(object):
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
         if func_name not in g_named_function:
-            raise RuntimeError("Undefined function: " + func_name)
-        function = g_named_function[func_name]
-        return g_llvm_builder.call(function, self.visit(n.args))
+            function, args = self.extern_function(n)
+        else:
+            function = g_named_function[func_name]
+            args = [] if n.args is None else self.visit(n.args)
+        return g_llvm_builder.call(function, args)
 
     def visit_ExprList(self, n, status=0):
         """
@@ -468,7 +481,16 @@ class LLVMGenerator(object):
         return {'dname': n.declname, 'dtype': self.visit(n.type)}
 
     def extern_function(self, n):
-        pass
+        if n.name.name == 'printf':
+            func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()], var_arg=True)
+            args = []
+            for index, arg in enumerate(n.args.exprs):
+                if index == 0:
+                    args.append(self.visit(arg))
+                else:
+                    args.append(self.visit(arg.expr, status=1))
+
+            return g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
     def get_element(self, n, arg=None):
         if arg:
@@ -498,7 +520,6 @@ class LLVMGenerator(object):
             else:
                 return None
 
-
     def generate_declaration(self, n, status=0, motifiers=[]):
         """
             status == 0: allocate local
@@ -522,7 +543,7 @@ class LLVMGenerator(object):
                 g_global_variable[n.name] = \
                     ir.GlobalVariable(g_llvm_module, current, name=n.name)
             elif status == 2:
-                if motifiers is not None and type(motifiers[0]) == ast.FuncDecl:
+                if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
                     function = ir.Function(g_llvm_module, current, name=n.name)
                     if motifiers[0].args:
                         paranames = [param.name for param in motifiers[0].args]
@@ -538,16 +559,15 @@ class LLVMGenerator(object):
             # return a type
             context = g_llvm_module.context
             st = context.get_identified_type(n.name)
-
+            global g_type_define
             if status == 0:
                 return st
-            elif status == 1:
-                global g_type_define
+            elif status == 1 and n.name not in g_type_define:
                 g_type_define[n.name] = [ele.name for ele in n.decls]
-                types = [self.generate_declaration(ele, status=2) for ele in n.decls]
+                types = [self.generate_declaration(ele.type, status=2) for ele in n.decls]
                 st.set_body(*types)
             else:
-                if motifiers is not None and type(motifiers[0]) == ast.FuncDecl:
+                if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
                     function = ir.Function(g_llvm_module, st, name=n.name)
                     paranames = [param.name for param in motifiers[0].args]
                     for arg, arg_name in zip(function.args, paranames):
