@@ -868,3 +868,10 @@ class CParser(object):
 
 class ParseError(Exception): pass
 
+def parse_file(filename, parser=None):
+    with open(filename, 'rU') as f:
+        text = f.read()
+
+    if parser is None:
+        parser = CParser()
+    return parser.parse(text, filename, debuglevel=2)
