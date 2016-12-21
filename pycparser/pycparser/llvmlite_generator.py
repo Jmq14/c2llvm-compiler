@@ -68,7 +68,7 @@ class LLVMGenerator(object):
             g_named_memory[nam] = g_llvm_builder.alloca(typ, name=nam)
             # allocate
             if n.init:
-                g_llvm_builder.store(self.visit(n.init), d)
+                g_llvm_builder.store(self.visit(n.init, 1), g_named_memory[nam])
                 # Here we don't handle the default values given 
                 # to function arguments
 
@@ -92,7 +92,7 @@ class LLVMGenerator(object):
             status == 1 -> get value
         """
         arr = self.visit(n.name)
-        index = self.visit(n.subscript)
+        index = self.visit(n.subscript, 1)
         zero = ir.Constant(ir.IntType(32), 0)
         ele = g_llvm_builder.gep(arr, [zero, index], inbounds=True)
         if status == 0:
@@ -120,8 +120,16 @@ class LLVMGenerator(object):
             block = function.append_basic_block(name="entry")
             g_llvm_builder = ir.IRBuilder(block)
 
+            ### Allocate all arguments
+            for arg in function.args:
+                nam = arg.name
+                g_named_memory[nam] = g_llvm_builder.alloca(arg.type.pointee, name=nam)
+
             ### Generate body content
             self.visit(n.body)
+        else:
+            g_current_function = None
+            function.is_declaration = True
 
     def visit_FuncDecl(self, n, status=0):
         """
@@ -139,6 +147,7 @@ class LLVMGenerator(object):
         f = self.get_type(n.type)
         funct_type = ir.FunctionType(f['dtype'], args_type)
         function = ir.Function(g_llvm_module, funct_type, name=f['dname'])
+        function.attributes.add("alwaysinline")
 
         # Set names for all arguments and add them to the variables symbol table.
         for arg, arg_name in zip(function.args, args_name):
@@ -194,14 +203,20 @@ class LLVMGenerator(object):
             status == 0 -> get pointer
             status ==1 -> get value
         """
+        if n.name == 'NULL' or n.name == 'null':
+            return 'NULL'
         if n.name in g_named_memory:
             if status == 0:
                 return g_named_memory[n.name]
             elif status == 1:
                 return g_llvm_builder.load(g_named_memory[n.name])
-
-        elif n.name in g_named_argument:
-            return g_named_argument[n.name]
+        elif n.name in g_global_variable:
+            if status == 0:
+                return g_global_variable[n.name]
+            elif status == 1:
+                return g_global_variable[n.name]
+        # elif n.name in g_named_argument:
+        #     return g_named_argument[n.name]
         else:
             raise RuntimeError("Undedined variable: " + n.name)
 
@@ -232,11 +247,17 @@ class LLVMGenerator(object):
             # rvalue -> binary op
             ans = self.visit(n.lvalue, 0)
             right = self.visit(n.rvalue, 1)
+            if right == 'NULL':
+                right = ir.Constant(ir.IntType(32), 0).bitcast(ans.type)
             g_llvm_builder.store(right, ans)
 
     def visit_BinaryOp(self, n, status=0):
         left = self.visit(n.left, 1)
         right = self.visit(n.right, 1)
+        if right == 'NULL':
+            right = ir.Constant(ir.IntType(32), 0).bitcast(left.type)
+        if left == 'NULL':
+            left = ir.Constant(ir.IntType(32), 0).bitcast(right.type)
         if n.op == '+':
             return g_llvm_builder.add(left, right)
         elif n.op == '-':
@@ -260,6 +281,9 @@ class LLVMGenerator(object):
         if (n.op == '&'):
             return self.visit(n.expr, 0)
         pass
+
+    def visit_Cast(self, n, status):
+        typ = self.get_type(n.to_type)
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
