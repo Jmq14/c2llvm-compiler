@@ -117,14 +117,15 @@ class Constant(Node):
 
 
 class IdentifierType(Node):
-    def __init__(self, name):
+    def __init__(self, name,spec):
         self.name = name
+        self.spec = spec
 
     def children(self):
         nodelist = []
         return tuple(nodelist)
 
-    attr_names = ('name',)
+    attr_names = ('name','spec')
 
 
 class InitList(Node):

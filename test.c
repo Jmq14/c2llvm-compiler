@@ -65,8 +65,7 @@ int main() {
     while (str[i]) {
         if (isdigit(str[i])) {
             int j = i;
-            for (; str[i] && isdigit(str[i]); i++)
-                ;
+            while( str[i] && isdigit(str[i])) {i++;}
             char buff[11] = {};
             memcpy(buff, str + j, i - j);
             push(&value, atoi(buff));

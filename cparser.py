@@ -399,6 +399,7 @@ class CParser(object):
             type = init_decl['type']
             while not isinstance(type, ast.IdentifierType):
                 type = type.type
+            type.spec = decl_spec['spec']
             decl = ast.Decl(
                 name=type.name,
                 quals=decl_spec['qual'],
@@ -473,7 +474,7 @@ class CParser(object):
         type = p[2]
         while not isinstance(type, ast.IdentifierType):
             type = type.type
-
+        type.spec = decl_spec['spec']
         declaration = ast.Decl(
             name=type.name,
             quals=decl_spec['qual'],
@@ -489,7 +490,7 @@ class CParser(object):
 
     def p_identifier(self, p):
         """ identifier  : ID """
-        p[0] = ast.IdentifierType(name=p[1])
+        p[0] = ast.IdentifierType(name=p[1],spec=None)
 
     def p_identifier_list(self, p):
         """ identifier_list : identifier
@@ -578,7 +579,7 @@ class CParser(object):
         type = p[2]
         while not isinstance(type, ast.IdentifierType):
             type = type.type
-
+        type.spec = decl_spec['spec']
         declaration = ast.Decl(
             name=type.name,
             quals=decl_spec['qual'],
@@ -607,7 +608,7 @@ class CParser(object):
         """ postfix_expression  : postfix_expression PERIOD identifier
                                 | postfix_expression ARROW identifier
         """
-        field = ast.IdentifierType(p[3])
+        field = ast.IdentifierType(name=p[3],spec=None)
         p[0] = ast.StructRef(p[1], p[2], field)
 
     def p_postfix_expression_5(self, p):
@@ -702,6 +703,7 @@ class CParser(object):
     def p_type_specifier_1(self, p):
         """ type_specifier  : INT
                             | CHAR
+                            | VOID
                             | struct_specifier
         """
         p[0] = p[1]
@@ -837,6 +839,7 @@ class CParser(object):
             type = struct_decl
             while not isinstance(type, ast.IdentifierType):
                 type = type.type
+            type.spec = spec_qual['spec']
             decl = ast.Decl(
                 name=type.name,
                 quals=spec_qual['qual'],
