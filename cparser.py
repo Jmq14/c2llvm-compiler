@@ -391,22 +391,47 @@ class CParser(object):
         """ declaration : declaration_specifiers init_declarator_list_opt SEMI
         """
         decl_spec = p[1]
+        struct = None
+        if isinstance(decl_spec['spec'][0], ast.Struct):
+            struct = decl_spec['spec'][0]
         init_decl_list = p[2]
 
         p[0] = []
 
         for init_decl in init_decl_list:
             type = init_decl['type']
-            while not isinstance(type, ast.IdentifierType):
-                type = type.type
-            type.spec = decl_spec['spec']
-            decl = ast.Decl(
-                name=type.name,
-                quals=decl_spec['qual'],
-                storage=decl_spec['storage'],
-                spec=decl_spec['spec'],
-                type=init_decl['type'],
-                init=init_decl['init'])
+            if struct is not None:
+                if isinstance(type, ast.IdentifierType):
+                    decl = ast.Decl(
+                        name=type.name,
+                        quals=decl_spec['qual'],
+                        storage=decl_spec['storage'],
+                        spec=decl_spec['spec'],
+                        type=struct,
+                        init=init_decl['init'])
+                else:
+                    while not isinstance(type.type, ast.IdentifierType):
+                        type = type.type
+                    declname = type.type.name
+                    type.type = struct
+                    decl = ast.Decl(
+                        name=declname,
+                        quals=decl_spec['qual'],
+                        storage=decl_spec['storage'],
+                        spec=decl_spec['spec'],
+                        type=init_decl['type'],
+                        init=None)
+            else:
+                while not isinstance(type, ast.IdentifierType):
+                    type = type.type
+                type.spec = decl_spec['spec']
+                decl = ast.Decl(
+                    name=type.name,
+                    quals=decl_spec['qual'],
+                    storage=decl_spec['storage'],
+                    spec=decl_spec['spec'],
+                    type=init_decl['type'],
+                    init=init_decl['init'])
             p[0].insert(0, decl)
 
     def p_direct_declarator_1(self, p):
@@ -471,17 +496,43 @@ class CParser(object):
         """ function_definition : declaration_specifiers declarator declaration_list_opt compound_statement
         """
         decl_spec = p[1]
+        struct = None
+        if isinstance(decl_spec['spec'][0], ast.Struct):
+            struct = decl_spec['spec'][0]
         type = p[2]
-        while not isinstance(type, ast.IdentifierType):
-            type = type.type
-        type.spec = decl_spec['spec']
-        declaration = ast.Decl(
-            name=type.name,
-            quals=decl_spec['qual'],
-            storage=decl_spec['storage'],
-            spec=decl_spec['spec'],
-            type=p[2],
-            init=None)
+
+        if struct is not None:
+            if isinstance(type, ast.IdentifierType):
+                declaration = ast.Decl(
+                    name=type.name,
+                    quals=decl_spec['qual'],
+                    storage=decl_spec['storage'],
+                    spec=decl_spec['spec'],
+                    type=struct,
+                    init=None)
+            else:
+                while not isinstance(type.type, ast.IdentifierType):
+                    type = type.type
+                declname = type.type.name
+                type.type = struct
+                declaration = ast.Decl(
+                    name=declname,
+                    quals=decl_spec['qual'],
+                    storage=decl_spec['storage'],
+                    spec=decl_spec['spec'],
+                    type=p[2],
+                    init=None)
+        else:
+            while not isinstance(type, ast.IdentifierType):
+                type = type.type
+            type.spec = decl_spec['spec']
+            declaration = ast.Decl(
+                name=type.name,
+                quals=decl_spec['qual'],
+                storage=decl_spec['storage'],
+                spec=decl_spec['spec'],
+                type=p[2],
+                init=None)
 
         p[0] = ast.FuncDef(
             decl=declaration,
@@ -576,17 +627,43 @@ class CParser(object):
         """ parameter_declaration   : declaration_specifiers declarator
         """
         decl_spec = p[1]
+        struct = None
+        if isinstance(decl_spec['spec'][0], ast.Struct):
+            struct = decl_spec['spec'][0]
         type = p[2]
-        while not isinstance(type, ast.IdentifierType):
-            type = type.type
-        type.spec = decl_spec['spec']
-        declaration = ast.Decl(
-            name=type.name,
-            quals=decl_spec['qual'],
-            storage=decl_spec['storage'],
-            spec=decl_spec['spec'],
-            type=p[2],
-            init=None)
+
+        if struct is not None:
+            if isinstance(type, ast.IdentifierType):
+                declaration = ast.Decl(
+                    name=type.name,
+                    quals=decl_spec['qual'],
+                    storage=decl_spec['storage'],
+                    spec=decl_spec['spec'],
+                    type=struct,
+                    init=None)
+            else:
+                while not isinstance(type.type, ast.IdentifierType):
+                    type = type.type
+                declname = type.type.name
+                type.type = struct
+                declaration = ast.Decl(
+                    name=declname,
+                    quals=decl_spec['qual'],
+                    storage=decl_spec['storage'],
+                    spec=decl_spec['spec'],
+                    type=p[2],
+                    init=None)
+        else:
+            while not isinstance(type, ast.IdentifierType):
+                type = type.type
+            type.spec = decl_spec['spec']
+            declaration = ast.Decl(
+                name=type.name,
+                quals=decl_spec['qual'],
+                storage=decl_spec['storage'],
+                spec=decl_spec['spec'],
+                type=p[2],
+                init=None)
 
         p[0] = declaration
 
@@ -799,7 +876,7 @@ class CParser(object):
         """ struct_specifier   : STRUCT identifier
         """
         p[0] = ast.Struct(
-            name=p[2],
+            name=p[2].name,
             decls=None)
 
     def p_struct_specifier_2(self, p):
@@ -813,7 +890,7 @@ class CParser(object):
         """ struct_specifier   : STRUCT identifier brace_open struct_declaration_list brace_close
         """
         p[0] = ast.Struct(
-            name=p[2],
+            name=p[2].name,
             decls=p[4])
 
     # Combine all declarations into a single list
@@ -831,22 +908,48 @@ class CParser(object):
         """ struct_declaration : specifier_qualifier_list struct_declarator_list SEMI
         """
         spec_qual = p[1]
+        struct = None
+        if isinstance(spec_qual['spec'][0],ast.Struct):
+            struct = spec_qual['spec'][0]
         struct_decl_list = p[2]
 
         p[0] = []
 
         for struct_decl in struct_decl_list:
-            type = struct_decl
-            while not isinstance(type, ast.IdentifierType):
-                type = type.type
-            type.spec = spec_qual['spec']
-            decl = ast.Decl(
-                name=type.name,
-                quals=spec_qual['qual'],
-                spec=spec_qual['spec'],
-                storage=[],
-                type=struct_decl,
-                init=None)
+            if struct is not None:
+                if isinstance(struct_decl, ast.IdentifierType):
+                    decl = ast.Decl(
+                        name=struct_decl.name,
+                        quals=spec_qual['qual'],
+                        spec=spec_qual['spec'],
+                        storage=[],
+                        type=struct,
+                        init=None)
+                else:
+                    type = struct_decl
+                    while not isinstance(type.type, ast.IdentifierType):
+                        type = type.type
+                    declname = type.type.name
+                    type.type = struct
+                    decl = ast.Decl(
+                        name=declname,
+                        quals=spec_qual['qual'],
+                        spec=spec_qual['spec'],
+                        storage=[],
+                        type=struct_decl,
+                        init=None)
+            else:
+                type = struct_decl
+                while not isinstance(type, ast.IdentifierType):
+                    type = type.type
+                type.spec = spec_qual['spec'][0]
+                decl = ast.Decl(
+                    name=type.name,
+                    quals=spec_qual['qual'],
+                    spec=spec_qual['spec'],
+                    storage=[],
+                    type=struct_decl,
+                    init=None)
             p[0].insert(0, decl)
 
     def p_struct_declarator_list(self, p):
