@@ -28,6 +28,7 @@ class CLexer(object):
         'static': 'STATIC',
         'const': 'CONST',
         'int': 'INT',
+        'void': 'VOID',
         'char': 'CHAR',
         'case': 'CASE',
         'switch': 'SWITCH',
