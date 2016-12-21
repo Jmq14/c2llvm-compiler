@@ -11,7 +11,10 @@ void init(struct SqStack *stk) { stk->cur = 0; }
 
 void push(struct SqStack *stk, int n) { stk->val[stk->cur++] = n; }
 
-int pop(struct SqStack *stk) { return stk->val[--stk->cur]; }
+int pop(struct SqStack *stk) { 
+    stk->cur = stk->cur - 1;
+    return stk->val[stk->cur]; 
+}
 
 int top(struct SqStack *stk) { return stk->val[stk->cur - 1]; }
 
