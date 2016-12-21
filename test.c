@@ -18,21 +18,22 @@ int top(struct SqStack *stk) { return stk->val[stk->cur - 1]; }
 int isEmpty(struct SqStack *stk) { return stk->cur == 0; }
 
 int indexOf(char ch) {
-    switch (ch) {
-    case '+':
-        return 0;
-    case '-':
-        return 1;
-    case '*':
-        return 2;
-    case '/':
-        return 3;
-    case '(':
-        return 4;
-    case ')':
-        return 5;
-    default:
-        return -1;
+    if (ch=='+') return 0;
+    else {
+        if (ch=='-') return 1;
+        else {
+            if (ch=='*') return 2;
+            else {
+                if (ch=='/') return 3;
+                else {
+                    if (ch=='(') return 4;
+                    else {
+                        if (ch==')') return 5;
+                        else return -1;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -40,19 +41,15 @@ void sendOp(char op) {
     if (op == '(' || op == ')')
         return;
     int right = pop(&value);
-    switch (op) {
-    case '+':
-        push(&value, pop(&value) + right);
-        break;
-    case '-':
-        push(&value, pop(&value) - right);
-        break;
-    case '*':
-        push(&value, pop(&value) * right);
-        break;
-    case '/':
-        push(&value, pop(&value) / right);
-        break;
+    if (op=='+') push(&value, pop(&value) + right);
+    else {
+        if (ch=='-') push(&value, pop(&value) - right);
+        else {
+            if (ch=='*') push(&value, pop(&value) * right);
+            else {
+                if (ch=='/') push(&value, pop(&value) / right);
+            }
+        }
     }
 }
 
