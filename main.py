@@ -37,7 +37,7 @@ def parse_file(filename, parser=None):
 
     if parser is None:
         parser = CParser()
-    return parser.parse(text, filename, debuglevel=2)
+    return parser.parse(text, filename, debuglevel=0)
 
 
 if __name__ == "__main__":
@@ -47,4 +47,4 @@ if __name__ == "__main__":
         filename = 'test.c'
 
     ast = parse_file(filename)
-    ast.show(attrnames=True,nodenames=True)
+    ast.show()

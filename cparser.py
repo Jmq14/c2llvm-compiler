@@ -31,7 +31,7 @@ class CParser(object):
         self.tokens = self.clex.tokens
         self.cparser = yacc.yacc(module=self,
                                  start='translation_unit_or_empty',
-                                 debug=True)
+                                 debug=False)
         self._scope_stack = [dict()]
 
     def parse(self, text, filename='', debuglevel=0):
@@ -78,12 +78,10 @@ class CParser(object):
 
     def _lex_on_lbrace_func(self):
         self._scope_stack.append(dict())
-        print('stack push')
 
     def _lex_on_rbrace_func(self):
         assert len(self._scope_stack) > 1
         self._scope_stack.pop()
-        print('stack pop')
 
     def _get_yacc_lookahead_token(self):
         """ We need access to yacc's lookahead token in certain cases.
