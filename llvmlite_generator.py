@@ -12,7 +12,7 @@ import ast
 class LLVMGenerator(object):
     def __init__(self):
         # The LLVM module, which holds all the IR code.
-        self.g_llvn_model = ir.Module('my compiler')
+        self.g_llvm_module = ir.Module('my compiler')
 
         # The LLVM instruction builder. Created whenever a new function is entered.
         self.g_llvn_builder = None
@@ -33,7 +33,7 @@ class LLVMGenerator(object):
 
     def generate(self, head):
         self.visit(head)
-        return self.g_llvn_model
+        return self.g_llvm_module
 
     # ---------- visit methods ---------
 
@@ -154,7 +154,7 @@ class LLVMGenerator(object):
 
         f = self.get_type(n.type)
         funct_type = ir.FunctionType(f['dtype'], args_type)
-        function = ir.Function(self.g_llvn_model, funct_type, name=f['dname'])
+        function = ir.Function(self.g_llvm_module, funct_type, name=f['dname'])
 
         # Set names for all arguments and add them to the variables symbol table.
         for arg, arg_name in zip(function.args, args_name):
@@ -191,7 +191,7 @@ class LLVMGenerator(object):
         elif n.type == 'string':
             typ = ir.ArrayType(ir.IntType(8), len(n.value))
             # TODO: prevent duplicate global name!
-            tmp = ir.GlobalVariable(self.g_llvn_model, typ, name='.str')
+            tmp = ir.GlobalVariable(self.g_llvm_module, typ, name='.str')
             tmp.initializer = ir.Constant(typ, bytearray(n.value))
             tmp.global_constant = True
 
@@ -213,7 +213,7 @@ class LLVMGenerator(object):
             elif name == 'void':
                 return ir.VoidType()
             elif name in self.g_type_define:
-                context = self.g_llvn_model.context
+                context = self.g_llvm_module.context
                 st = context.get_identified_type(n.name)
                 return st
             else:
@@ -290,14 +290,21 @@ class LLVMGenerator(object):
                 right = ir.Constant(ir.IntType(32), 0).bitcast(ans.type)
             self.g_llvn_builder.store(right, ans)
 
-    def visit_BinaryOp(self, n, status=0):
-        left = self.visit(n.left, 1)
+    def visit_BinaryOp(self, n, status=1):
+        left = self.visit(n.left, status)
         right = self.visit(n.right, 1)
         if right == 'NULL':
             right = ir.Constant(ir.IntType(32), 0).bitcast(left.type)
         if left == 'NULL':
             left = ir.Constant(ir.IntType(32), 0).bitcast(right.type)
         if n.op == '+':
+            # ptr + int: get the address
+            if isinstance(left.type, ir.PointerType) and \
+                    isinstance(left.type.pointee, ir.ArrayType):
+                zero = ir.Constant(ir.IntType(32), 0)
+                first_addr = self.g_llvn_builder.gep(left, [zero, zero], inbounds=True)
+                return self.g_llvn_builder.gep(first_addr, [right], inbounds=True)
+
             return self.g_llvn_builder.add(left, right)
         elif n.op == '-':
             return self.g_llvn_builder.sub(left, right)
@@ -389,7 +396,7 @@ class LLVMGenerator(object):
         self.g_llvn_builder.ret(self.visit(n.expr))
 
     def visit_Struct(self, n, status=0):
-        context = self.g_llvn_model.context
+        context = self.g_llvm_module.context
         st = context.get_identified_type(n.name)
         return st
 
@@ -397,7 +404,7 @@ class LLVMGenerator(object):
         if n.type == '->':
             s = self.visit(n.name)
 
-            context = self.g_llvn_model.context
+            context = self.g_llvm_module.context
             st_name = s.type.pointee.name
             st_field = n.field.name
             st = context.get_identified_type(st_name)
@@ -424,7 +431,7 @@ class LLVMGenerator(object):
         nam = d['dname']
         typ = d['dtype']
         self.g_global_variable[nam] = \
-            ir.GlobalVariable(self.g_llvn_model, typ, name=nam)
+            ir.GlobalVariable(self.g_llvm_module, typ, name=nam)
         # allocate
         if n.init:
             self.g_global_variable[nam].initializer = self.global_visit(n.init, n.name)
@@ -435,7 +442,7 @@ class LLVMGenerator(object):
         nam = d['dname']
         typ = d['dtype']
         self.g_global_variable[nam] = \
-            ir.GlobalVariable(self.g_llvn_model, ir.ArrayType(typ, int(n.dim.value)), name=nam)
+            ir.GlobalVariable(self.g_llvm_module, ir.ArrayType(typ, int(n.dim.value)), name=nam)
         return self.g_global_variable[nam]
 
     def global_visit_TypeDecl(self, n, status=0):
@@ -444,14 +451,14 @@ class LLVMGenerator(object):
             if n.declname:
                 nam = n.declname
                 self.g_global_variable[nam] = \
-                    ir.GlobalVariable(self.g_llvn_model, typ, name=nam)
+                    ir.GlobalVariable(self.g_llvm_module, typ, name=nam)
                 return self.g_global_variable[nam]
             return None
         else:
             typ = self.visit(n.type)
             nam = n.declname
             self.g_global_variable[nam] = \
-                ir.GlobalVariable(self.g_llvn_model, typ, name=nam)
+                ir.GlobalVariable(self.g_llvm_module, typ, name=nam)
             return self.g_global_variable[nam]
 
     def global_visit_InitList(self, n, status=0):
@@ -462,7 +469,7 @@ class LLVMGenerator(object):
         return self.visit(n)
 
     def global_visit_Struct(self, n, status=0):
-        context = self.g_llvn_model.context
+        context = self.g_llvm_module.context
         st = context.get_identified_type(n.name)
         elements = [self.get_decl(it) for it in n.decls]
         types = [ele['dtype'] for ele in elements]
@@ -504,35 +511,54 @@ class LLVMGenerator(object):
                 else:
                     args.append(self.visit(arg.expr, status=1))
 
-            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+            return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
         if n.name.name == 'gets':
             func_type = ir.FunctionType(ir.IntType(32), [], var_arg=True)
             args = []
-            for index, arg in enumerate(n.args.exprs):
+            for arg in n.args.exprs:
                 zero = ir.Constant(ir.IntType(32), 0)
                 ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
                 args.append(ptr)
 
-            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+            return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
         if n.name.name == 'isdigit':
             func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(32)], var_arg=True)
             args = []
-            for index, arg in enumerate(n.args.exprs):
+            for arg in n.args.exprs:
                 ext = self.g_llvn_builder.sext(self.visit(arg, status=1), ir.IntType(32))
                 args.append(ext)
-            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+            return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
         if n.name.name == 'atoi':
             func_type = ir.FunctionType(ir.IntType(32), [], var_arg=True)
             args = []
-            for index, arg in enumerate(n.args.exprs):
+            for arg in n.args.exprs:
                 zero = ir.Constant(ir.IntType(32), 0)
                 ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
                 args.append(ptr)
 
-            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+            return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
+
+        if n.name.name == 'memcpy':
+            args = []
+            for index, arg in enumerate(n.args.exprs):
+                if index == 2:
+                    args.append(self.visit(arg, status=1))
+                else:
+                    array_addr = self.visit(arg, status=0)
+                    if isinstance(array_addr.type, ir.PointerType) and \
+                            isinstance(array_addr.type.pointee, ir.ArrayType):
+                        zero = ir.Constant(ir.IntType(32), 0)
+                        array_addr = self.g_llvn_builder.gep(array_addr, [zero, zero], inbounds=True)
+                    args.append(array_addr)
+            args.append(ir.Constant(ir.IntType(32), 1))
+            args.append(ir.Constant(ir.IntType(1), 0))
+
+            pint8 = ir.PointerType(ir.IntType(8))
+            k = self.g_llvm_module.declare_intrinsic('llvm.memcpy', [pint8, pint8, ir.IntType(32)]), args
+            return k
 
     def get_element(self, n, arg=None):
         if arg:
@@ -557,7 +583,7 @@ class LLVMGenerator(object):
             elif n == 'void':
                 return ir.VoidType()
             elif n in self.g_type_define:
-                context = self.g_llvn_model.context
+                context = self.g_llvm_module.context
                 return context.get_identified_type(n.name)
             else:
                 return None
@@ -581,10 +607,10 @@ class LLVMGenerator(object):
                 self.g_named_memory[n.name] = self.g_llvn_builder.alloca(current, name=n.name)
             elif status == 1:
                 self.g_global_variable[n.name] = \
-                    ir.GlobalVariable(self.g_llvn_model, current, name=n.name)
+                    ir.GlobalVariable(self.g_llvm_module, current, name=n.name)
             elif status == 2:
                 if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
-                    function = ir.Function(self.g_llvn_model, current, name=n.name)
+                    function = ir.Function(self.g_llvm_module, current, name=n.name)
                     if motifiers[0].args:
                         paranames = [param.name for param in motifiers[0].args]
                         for arg, arg_name in zip(function.args, paranames):
@@ -597,7 +623,7 @@ class LLVMGenerator(object):
 
         elif typ == ast.Struct:
             # return a type
-            context = self.g_llvn_model.context
+            context = self.g_llvm_module.context
             st = context.get_identified_type(n.name)
             if status == 0:
                 return st
@@ -607,7 +633,7 @@ class LLVMGenerator(object):
                 st.set_body(*types)
             else:
                 if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
-                    function = ir.Function(self.g_llvn_model, st, name=n.name)
+                    function = ir.Function(self.g_llvm_module, st, name=n.name)
                     paranames = [param.name for param in motifiers[0].args]
                     for arg, arg_name in zip(function.args, paranames):
                         arg.name = arg_name
