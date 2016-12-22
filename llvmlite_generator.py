@@ -524,6 +524,16 @@ class LLVMGenerator(object):
                 args.append(ext)
             return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
 
+        if n.name.name == 'atoi':
+            func_type = ir.FunctionType(ir.IntType(32), [], var_arg=True)
+            args = []
+            for index, arg in enumerate(n.args.exprs):
+                zero = ir.Constant(ir.IntType(32), 0)
+                ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
+                args.append(ptr)
+
+            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+
     def get_element(self, n, arg=None):
         if arg:
             typ = type(n)
