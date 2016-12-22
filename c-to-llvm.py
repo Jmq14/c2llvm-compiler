@@ -46,7 +46,6 @@ int main() {
 '''
     parser = cparser.CParser()
     ast = parser.parse(src)
-    ast.show(attrnames=True)
 
     generator = llvmlite_generator.LLVMGenerator()
 
