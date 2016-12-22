@@ -27,6 +27,9 @@ class LLVMGenerator(object):
 
         # current function
         self.g_current_function = None
+        # stack blocks
+        self.g_loop_block_start_stack = []
+        self.g_loop_block_end_stack = []
 
     def generate(self, head):
         self.visit(head)
@@ -307,8 +310,12 @@ class LLVMGenerator(object):
         elif n.op == '===':
             return self.g_llvn_builder.icmp_signed('==', left, right)
         elif n.op == '&&':
+            left = self.g_llvn_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
+            right = self.g_llvn_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
             return self.g_llvn_builder.and_(left, right)
         elif n.op == '||':
+            left = self.g_llvn_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
+            right = self.g_llvn_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
             return self.g_llvn_builder.or_(left, right)
         else:
             raise RuntimeError("not implement binary operator!")
@@ -337,31 +344,46 @@ class LLVMGenerator(object):
         return arg_list
 
     def visit_If(self, n, status=0):
+        cond = self.visit(n.cond, 1)
+        if type(cond) is not ir.IntType(1):
+            cond = self.g_llvn_builder.icmp_signed('!=', cond, ir.Constant(cond.type, 0))
         if n.iffalse:
-            with self.g_llvn_builder.if_else(self.visit(n.cond)) as (then, otherwise):
+            with self.g_llvn_builder.if_else(cond) as (then, otherwise):
                 with then:
                     self.visit(n.iftrue)
                 with otherwise:
                     self.visit(n.iffalse)
         else:
-            with self.g_llvn_builder.if_then(self.visit(n.cond)):
+            with self.g_llvn_builder.if_then(cond):
                 self.visit(n.iftrue)
 
     def visit_While(self, n, status=0):
         while_cmp = self.g_current_function.append_basic_block()
         while_entry = self.g_current_function.append_basic_block()
         while_end = self.g_current_function.append_basic_block()
-        self.g_llvn_builder.branch(while_cmp)
+        self.g_loop_block_start_stack.append(while_cmp)
+        self.g_loop_block_end_stack.append(while_end)
 
+        self.g_llvn_builder.branch(while_cmp)
         self.g_llvn_builder.position_at_end(while_cmp)
-        c = self.visit(n.cond)
+        c = self.visit(n.cond, 1)
+        if type(c) is not ir.IntType(1):
+            c = self.g_llvn_builder.icmp_signed('!=', c, ir.Constant(c.type, 0))
         self.g_llvn_builder.cbranch(c, while_entry, while_end)
 
         self.g_llvn_builder.position_at_end(while_entry)
         self.visit(n.stmt)
         self.g_llvn_builder.branch(while_cmp)
 
+        self.g_loop_block_start_stack.pop()
+        self.g_loop_block_end_stack.pop()
         self.g_llvn_builder.position_at_end(while_end)
+
+    def visit_Continue(self, n, status=0):
+        self.g_llvn_builder.branch(self.g_loop_block_start_stack[-1])
+
+    def visit_Break(self, n, status=0):
+        self.g_llvn_builder.branch(self.g_loop_block_end_stack[-1])
 
     def visit_Return(self, n, status=0):
         self.g_llvn_builder.ret(self.visit(n.expr))
@@ -492,6 +514,14 @@ class LLVMGenerator(object):
                 ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
                 args.append(ptr)
 
+            return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
+
+        if n.name.name == 'isdigit':
+            func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(32)], var_arg=True)
+            args = []
+            for index, arg in enumerate(n.args.exprs):
+                ext = self.g_llvn_builder.sext(self.visit(arg, status=1), ir.IntType(32))
+                args.append(ext)
             return self.g_llvn_model.declare_intrinsic(n.name.name, (), func_type), args
 
     def get_element(self, n, arg=None):
