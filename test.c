@@ -7,9 +7,14 @@ struct SqStack {
     int cur;
 } op, value;
 
-void init(struct SqStack *stk) { stk->cur = 0; }
+void init(struct SqStack *stk) { stk->cur = 0; return;}
 
-void push(struct SqStack *stk, int n) { stk->val[stk->cur++] = n; }
+void push(struct SqStack *stk, int n) { 
+    int i = stk->cur;
+    stk->val[i] = n; 
+    stk->cur = stk->cur + 1;
+    return;
+}
 
 int pop(struct SqStack *stk) { 
     stk->cur = stk->cur - 1;
@@ -32,28 +37,30 @@ int indexOf(char ch) {
                     if (ch=='(') return 4;
                     else {
                         if (ch==')') return 5;
-                        else return -1;
+                        else return 233;
                     }
                 }
             }
         }
     }
+    return 233;
 }
 
 void sendOp(char op) {
-    if (op == '(' || op == ')')
+    if ((op == '(') || (op == ')'))
         return;
     int right = pop(&value);
     if (op=='+') push(&value, pop(&value) + right);
     else {
-        if (ch=='-') push(&value, pop(&value) - right);
+        if (op=='-') push(&value, pop(&value) - right);
         else {
-            if (ch=='*') push(&value, pop(&value) * right);
+            if (op=='*') push(&value, pop(&value) * right);
             else {
-                if (ch=='/') push(&value, pop(&value) / right);
+                if (op=='/') push(&value, pop(&value) / right);
             }
         }
     }
+    return;
 }
 
 int main() {
@@ -65,26 +72,29 @@ int main() {
     while (str[i]) {
         if (isdigit(str[i])) {
             int j = i;
-            while( str[i] && isdigit(str[i])) {i++;}
-            char buff[11] = {};
+            while( str[i] && isdigit(str[i])) {i = i + 1;}
+            char buff[11];
             memcpy(buff, str + j, i - j);
             push(&value, atoi(buff));
             continue;
         }
         while (!isEmpty(&op) && lessPrior[indexOf(str[i])][indexOf(top(&op))])
             sendOp(pop(&op));
-        if (str[i] == ')' && top(&op) == '(') {
+        if ((str[i] == ')') && (top(&op) == '(')) {
             pop(&op);
-            i++;
+            i = i + 1;
             continue;
         }
-        if (str[i] == '-' &&
-            (!i || ((!isdigit(str[i - 1]) && str[i - 1] != ')'))))
+        if ((str[i] == '-') &&
+            (!i || ((!isdigit(str[i - 1]) && (str[i - 1] != ')')))))
             push(&value, 0);
-        push(&op, str[i++]);
+        push(&op, str[i]);
+        i = i + 1;
     }
     while (!isEmpty(&op))
         sendOp(pop(&op));
-    printf("%d\n", pop(&value));
+    
+    int out = pop(&value);
+    printf("%d\n", out);
     return 0;
 }
