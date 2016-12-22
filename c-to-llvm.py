@@ -22,18 +22,26 @@ def translate_to_c(filename):
 
 def _zz_test_translate():
     src = r'''
-int lessPrior[6][6] = {{1, 1, 1, 1, 0, 1}, {1, 1, 1, 1, 0, 1},
-                      {0, 0, 1, 1, 0, 1}, {0, 0, 1, 1, 0, 1},
-                      {0, 0, 0, 0, 0, 1}, {1, 1, 1, 1, 0, 1}};
 
 int main() {
-  int a = 1;
-  int b = 2;
-  int c = a + lessPrior[0][0];
-  while (c < 4) {
-      c = c + 1;
-  }
-  return 0;
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    while (i < 8) {
+       i = i + 1;
+
+       if (i == 4) {
+       j = i;
+
+       continue;
+       }
+
+       if (i == 4) {
+       j = i + 1;
+       }
+    }
+    printf("%d", j);
+    return 0;
 }
 '''
     parser = cparser.CParser()

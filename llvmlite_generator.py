@@ -7,6 +7,7 @@
 
 from __future__ import print_function
 from llvmlite import ir
+from llvmlite import binding
 import ast
 
 class LLVMGenerator(object):
@@ -15,7 +16,7 @@ class LLVMGenerator(object):
         self.g_llvm_module = ir.Module('my compiler')
 
         # The LLVM instruction builder. Created whenever a new function is entered.
-        self.g_llvn_builder = None
+        self.g_llvm_builder = None
 
         # A dictionary that keeps track of which values are defined in the current scope
         # and what their LLVM representation is.
@@ -30,6 +31,9 @@ class LLVMGenerator(object):
         # stack blocks
         self.g_loop_block_start_stack = []
         self.g_loop_block_end_stack = []
+
+        binding.initialize()
+        binding.initialize_native_target()
 
     def generate(self, head):
         self.visit(head)
@@ -75,13 +79,16 @@ class LLVMGenerator(object):
         #         self.g_llvn_builder.store(self.visit(n.init, 1), self.g_named_memory[nam])
                 # Here we don't handle the default values given 
                 # to function arguments
-        d = self.generate_declaration(n.type, status, [])
+        d = self.generate_declaration(n, status, [])
         if n.init:
             if status == 0:
-                self.g_llvn_builder.store(self.visit(n.init, 1), self.g_named_memory[n.name])
+                self.g_llvm_builder.store(self.visit(n.init, 1), self.g_named_memory[n.name])
             elif status == 1:
                 self.g_global_variable[n.name].initializer = self.visit(n.init, n.name)
-
+        else:
+            if status == 1:
+                self.g_global_variable[n.name].linkage = "common"
+                self.g_global_variable[n.name].align = 4
         if status == 2:
             return d
 
@@ -95,7 +102,7 @@ class LLVMGenerator(object):
 
         self.declaration_verify(nam)
 
-        self.g_named_memory[nam] = self.g_llvn_builder.alloca(ir.ArrayType(typ, int(n.dim.value)), name=nam)
+        self.g_named_memory[nam] = self.g_llvm_builder.alloca(ir.ArrayType(typ, int(n.dim.value)), name=nam)
         return self.g_named_memory[nam]
 
     def visit_ArrayRef(self, n, status=0):
@@ -107,11 +114,11 @@ class LLVMGenerator(object):
         arr = self.visit(n.name)
         index = self.visit(n.subscript, 1)
         zero = ir.Constant(ir.IntType(32), 0)
-        ele = self.g_llvn_builder.gep(arr, [zero, index], inbounds=True)
+        ele = self.g_llvm_builder.gep(arr, [zero, index], inbounds=True)
         if status == 0:
             return ele
         elif status == 1:
-            return self.g_llvn_builder.load(ele)
+            return self.g_llvm_builder.load(ele)
 
     def visit_FuncDef(self, n, status=0):
         """
@@ -126,18 +133,25 @@ class LLVMGenerator(object):
 
         if n.body:
             block = function.append_basic_block(name="entry")
-            self.g_llvn_builder = ir.IRBuilder(block)
+            self.g_llvm_builder = ir.IRBuilder(block)
 
-            ### Allocate all arguments
+            ### Allocate  & store all arguments
             for arg in function.args:
                 nam = arg.name
-                self.g_named_memory[nam] = self.g_llvn_builder.alloca(arg.type.pointee, name=nam)
+                self.g_named_memory[nam] = self.g_llvm_builder.alloca(arg.type, name=nam)
+                self.g_llvm_builder.store(arg, self.g_named_memory[nam])
 
             ### Generate body content
             self.visit(n.body)
         else:
             self.g_current_function = None
             function.is_declaration = True
+
+        self.g_named_memory.clear()
+        self.g_named_argument.clear()
+        del self.g_loop_block_start_stack[:]
+        del self.g_loop_block_end_stack[:]
+        self.g_current_function = None
 
     def visit_FuncDecl(self, n, status=0):
         """
@@ -161,6 +175,9 @@ class LLVMGenerator(object):
             arg.name = arg_name
             # Add arguments to variable symbol table.
             self.g_named_argument[arg_name] = arg
+            # Set signed extension for char
+            if isinstance(arg.type, ir.IntType):
+                arg.set_attributes('signext')
 
         self.g_named_function[f['dname']] = function
 
@@ -188,16 +205,19 @@ class LLVMGenerator(object):
             c = ir.Constant(ir.FloatType(), n.value)
         elif n.type == 'double':
             c = ir.Constant(ir.DoubleType(), n.value)
+        elif n.type == 'char':
+            c = ir.Constant(ir.IntType(8), self.char2int(n.value))
         elif n.type == 'string':
-            typ = ir.ArrayType(ir.IntType(8), len(n.value))
+            str = self.remove_quotes(n.value)
+            typ = ir.ArrayType(ir.IntType(8), len(str))
             # TODO: prevent duplicate global name!
             tmp = ir.GlobalVariable(self.g_llvm_module, typ, name='.str')
-            tmp.initializer = ir.Constant(typ, bytearray(n.value))
+            tmp.initializer = ir.Constant(typ, bytearray(str))
             tmp.global_constant = True
 
             self.g_global_variable['.str'] = tmp
             zero = ir.Constant(ir.IntType(32), 0)
-            return self.g_llvn_builder.gep(tmp, [zero, zero], inbounds=True)
+            return self.g_llvm_builder.gep(tmp, [zero, zero], inbounds=True)
         else:
             raise RuntimeError("not implement constant type: " + n.type)
         return c
@@ -224,7 +244,7 @@ class LLVMGenerator(object):
                 if status == 0:
                     return self.g_named_memory[n.name]
                 elif status == 1:
-                    return self.g_llvn_builder.load(self.g_named_memory[n.name])
+                    return self.g_llvm_builder.load(self.g_named_memory[n.name])
 
             elif n.name in self.g_global_variable:
                 if status == 0:
@@ -248,7 +268,7 @@ class LLVMGenerator(object):
             if status == 0:
                 return self.g_named_memory[n.name]
             elif status == 1:
-                return self.g_llvn_builder.load(self.g_named_memory[n.name])
+                return self.g_llvm_builder.load(self.g_named_memory[n.name])
         elif n.name in self.g_global_variable:
             if status == 0:
                 return self.g_global_variable[n.name]
@@ -269,7 +289,7 @@ class LLVMGenerator(object):
 
         self.declaration_verify(nam)
 
-        self.g_named_memory[nam] = self.g_llvn_builder.alloca(typ, name=nam)
+        self.g_named_memory[nam] = self.g_llvm_builder.alloca(typ, name=nam)
         return self.g_named_memory[nam]
 
     def visit_PtrDecl(self, n, status=0):
@@ -277,7 +297,7 @@ class LLVMGenerator(object):
         nam = d['dname']
         typ = d['dtype']
         ptr = ir.PointerType(typ)
-        self.g_named_memory[nam] = self.g_llvn_builder.alloca(ptr, name=nam)
+        self.g_named_memory[nam] = self.g_llvm_builder.alloca(ptr, name=nam)
         return self.g_named_memory[nam]
 
     def visit_Assignment(self, n, status=0):
@@ -288,7 +308,7 @@ class LLVMGenerator(object):
             right = self.visit(n.rvalue, 1)
             if right == 'NULL':
                 right = ir.Constant(ir.IntType(32), 0).bitcast(ans.type)
-            self.g_llvn_builder.store(right, ans)
+            self.g_llvm_builder.store(right, ans)
 
     def visit_BinaryOp(self, n, status=1):
         left = self.visit(n.left, status)
@@ -302,35 +322,37 @@ class LLVMGenerator(object):
             if isinstance(left.type, ir.PointerType) and \
                     isinstance(left.type.pointee, ir.ArrayType):
                 zero = ir.Constant(ir.IntType(32), 0)
-                first_addr = self.g_llvn_builder.gep(left, [zero, zero], inbounds=True)
-                return self.g_llvn_builder.gep(first_addr, [right], inbounds=True)
+                first_addr = self.g_llvm_builder.gep(left, [zero, zero], inbounds=True)
+                return self.g_llvm_builder.gep(first_addr, [right], inbounds=True)
 
-            return self.g_llvn_builder.add(left, right)
+            return self.g_llvm_builder.add(left, right)
         elif n.op == '-':
-            return self.g_llvn_builder.sub(left, right)
+            return self.g_llvm_builder.sub(left, right)
         elif n.op == '*':
-            return self.g_llvn_builder.mul(left, right)
+            return self.g_llvm_builder.mul(left, right)
         elif n.op == '/':
-            return self.g_llvn_builder.sdiv(left, right)
+            return self.g_llvm_builder.sdiv(left, right)
         elif n.op in {'<', '<=', '==', '!=', '>=', '>'}:
-            return self.g_llvn_builder.icmp_signed(n.op, left, right)
+            return self.g_llvm_builder.icmp_signed(n.op, left, right)
         elif n.op == '===':
-            return self.g_llvn_builder.icmp_signed('==', left, right)
+            return self.g_llvm_builder.icmp_signed('==', left, right)
         elif n.op == '&&':
-            left = self.g_llvn_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
-            right = self.g_llvn_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
-            return self.g_llvn_builder.and_(left, right)
+            left = self.g_llvm_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
+            right = self.g_llvm_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
+            return self.g_llvm_builder.and_(left, right)
         elif n.op == '||':
-            left = self.g_llvn_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
-            right = self.g_llvn_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
-            return self.g_llvn_builder.or_(left, right)
+            left = self.g_llvm_builder.icmp_signed('!=', left, ir.Constant(left.type, 0))
+            right = self.g_llvm_builder.icmp_signed('!=', right, ir.Constant(right.type, 0))
+            return self.g_llvm_builder.or_(left, right)
         else:
             raise RuntimeError("not implement binary operator!")
 
     def visit_UnaryOp(self, n, status=0):
         if (n.op == '&'):
             return self.visit(n.expr, 0)
-        pass
+        elif (n.op == '!'):
+            obj = self.visit(n.expr, 1)
+            return self.g_llvm_builder.icmp_signed('!=', obj, ir.Constant(obj.type, 0))
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
@@ -338,8 +360,14 @@ class LLVMGenerator(object):
             function, args = self.extern_function(n)
         else:
             function = self.g_named_function[func_name]
-            args = [] if n.args is None else self.visit(n.args)
-        return self.g_llvn_builder.call(function, args)
+            args = [] if n.args is None else self.visit(n.args, 1)
+            for i, (param, arg) in enumerate(zip(args, function.args)):
+                if isinstance(arg.type, ir.IntType) and isinstance(param.type, ir.IntType):
+                    if arg.type.width > param.type.width:
+                        args[i] = self.g_llvm_builder.sext(param, arg.type)
+                    elif arg.type.width < param.type.width:
+                        args[i] = self.g_llvm_builder.trunc(param, arg.type)
+        return self.g_llvm_builder.call(function, args)
 
     def visit_ExprList(self, n, status=0):
         """
@@ -347,21 +375,21 @@ class LLVMGenerator(object):
         """
         arg_list = []
         for arg in n.exprs:
-            arg_list.append(self.visit(arg))
+            arg_list.append(self.visit(arg, status))
         return arg_list
 
     def visit_If(self, n, status=0):
         cond = self.visit(n.cond, 1)
         if type(cond) is not ir.IntType(1):
-            cond = self.g_llvn_builder.icmp_signed('!=', cond, ir.Constant(cond.type, 0))
+            cond = self.g_llvm_builder.icmp_signed('!=', cond, ir.Constant(cond.type, 0))
         if n.iffalse:
-            with self.g_llvn_builder.if_else(cond) as (then, otherwise):
+            with self.g_llvm_builder.if_else(cond) as (then, otherwise):
                 with then:
                     self.visit(n.iftrue)
                 with otherwise:
                     self.visit(n.iffalse)
         else:
-            with self.g_llvn_builder.if_then(cond):
+            with self.g_llvm_builder.if_then(cond):
                 self.visit(n.iftrue)
 
     def visit_While(self, n, status=0):
@@ -371,29 +399,39 @@ class LLVMGenerator(object):
         self.g_loop_block_start_stack.append(while_cmp)
         self.g_loop_block_end_stack.append(while_end)
 
-        self.g_llvn_builder.branch(while_cmp)
-        self.g_llvn_builder.position_at_end(while_cmp)
+        self.g_llvm_builder.branch(while_cmp)
+        self.g_llvm_builder.position_at_end(while_cmp)
         c = self.visit(n.cond, 1)
         if type(c) is not ir.IntType(1):
-            c = self.g_llvn_builder.icmp_signed('!=', c, ir.Constant(c.type, 0))
-        self.g_llvn_builder.cbranch(c, while_entry, while_end)
+            c = self.g_llvm_builder.icmp_signed('!=', c, ir.Constant(c.type, 0))
+        self.g_llvm_builder.cbranch(c, while_entry, while_end)
 
-        self.g_llvn_builder.position_at_end(while_entry)
+        self.g_llvm_builder.position_at_end(while_entry)
         self.visit(n.stmt)
-        self.g_llvn_builder.branch(while_cmp)
+        self.g_llvm_builder.branch(while_cmp)
 
         self.g_loop_block_start_stack.pop()
         self.g_loop_block_end_stack.pop()
-        self.g_llvn_builder.position_at_end(while_end)
+        self.g_llvm_builder.position_at_end(while_end)
 
     def visit_Continue(self, n, status=0):
-        self.g_llvn_builder.branch(self.g_loop_block_start_stack[-1])
+        self.g_llvm_builder.branch(self.g_loop_block_start_stack[-1])
 
     def visit_Break(self, n, status=0):
-        self.g_llvn_builder.branch(self.g_loop_block_end_stack[-1])
+        self.g_llvm_builder.branch(self.g_loop_block_end_stack[-1])
 
     def visit_Return(self, n, status=0):
-        self.g_llvn_builder.ret(self.visit(n.expr))
+        if n.expr:
+            ret = self.visit(n.expr, 1)
+            func_ret = self.g_current_function.return_value
+            if isinstance(ret.type, ir.IntType) and isinstance(func_ret.type, ir.IntType):
+                if func_ret.type.width > ret.type.width:
+                    ret = self.g_llvm_builder.sext(ret, func_ret.type)
+                elif func_ret.type.width < ret.type.width:
+                    ret = self.g_llvm_builder.trunc(ret, func_ret.type)
+            self.g_llvm_builder.ret(ret)
+        else:
+            self.g_llvm_builder.ret_void()
 
     def visit_Struct(self, n, status=0):
         context = self.g_llvm_module.context
@@ -401,20 +439,42 @@ class LLVMGenerator(object):
         return st
 
     def visit_StructRef(self, n, status=0):
-        if n.type == '->':
-            s = self.visit(n.name)
+        """
+            Return Struct.
+            status == 0 -> get pointer
+            status ==1 -> get value
+        """
+        if status == 0:
+            if n.type == '->':
+                s = self.visit(n.name, 1)
 
-            context = self.g_llvm_module.context
-            st_name = s.type.pointee.name
-            st_field = n.field.name
-            st = context.get_identified_type(st_name)
-            if st_field not in self.g_type_define[st_name]:
-                raise RuntimeError("Field not defined: " + st_field)
+                context = self.g_llvm_module.context
+                st_name = s.type.pointee.name
+                st_field = n.field.name.name
+                st = context.get_identified_type(st_name)
+                if st_field not in self.g_type_define[st_name]:
+                    raise RuntimeError("Field not defined: " + st_field)
 
-            zero = ir.Constant(ir.IntType(32), 0)
-            index = ir.Constant(ir.IntType(32), self.g_type_define[st_name].index(st_field))
-            ele = self.g_llvn_builder.gep(s, [zero, index], inbounds=True)
-        return ele
+                zero = ir.Constant(ir.IntType(32), 0)
+                index = ir.Constant(ir.IntType(32), self.g_type_define[st_name].index(st_field))
+                ele = self.g_llvm_builder.gep(s, [zero, index], inbounds=True)
+            return ele
+        elif status == 1:
+            if n.type == '->':
+                s = self.visit(n.name, 1)
+
+                context = self.g_llvm_module.context
+                st_name = s.type.pointee.name
+                st_field = n.field.name.name
+                st = context.get_identified_type(st_name)
+                if st_field not in self.g_type_define[st_name]:
+                    raise RuntimeError("Field not defined: " + st_field)
+
+                zero = ir.Constant(ir.IntType(32), 0)
+                index = ir.Constant(ir.IntType(32), self.g_type_define[st_name].index(st_field))
+                ele = self.g_llvm_builder.gep(s, [zero, index], inbounds=True)
+                ele = self.g_llvm_builder.load(ele)
+            return ele
 
     def visit_InitList(self, n, status=0):
         # arr = ir.Constant(ir.ArrayType(typ, int(len(n.exprs)))
@@ -509,7 +569,7 @@ class LLVMGenerator(object):
                 if index == 0:
                     args.append(self.visit(arg))
                 else:
-                    args.append(self.visit(arg.expr, status=1))
+                    args.append(self.visit(arg, status=1))
 
             return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
@@ -518,7 +578,7 @@ class LLVMGenerator(object):
             args = []
             for arg in n.args.exprs:
                 zero = ir.Constant(ir.IntType(32), 0)
-                ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
+                ptr = self.g_llvm_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
                 args.append(ptr)
 
             return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
@@ -527,7 +587,7 @@ class LLVMGenerator(object):
             func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(32)], var_arg=True)
             args = []
             for arg in n.args.exprs:
-                ext = self.g_llvn_builder.sext(self.visit(arg, status=1), ir.IntType(32))
+                ext = self.g_llvm_builder.sext(self.visit(arg, status=1), ir.IntType(32))
                 args.append(ext)
             return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
@@ -536,7 +596,7 @@ class LLVMGenerator(object):
             args = []
             for arg in n.args.exprs:
                 zero = ir.Constant(ir.IntType(32), 0)
-                ptr = self.g_llvn_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
+                ptr = self.g_llvm_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
                 args.append(ptr)
 
             return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
@@ -551,7 +611,7 @@ class LLVMGenerator(object):
                     if isinstance(array_addr.type, ir.PointerType) and \
                             isinstance(array_addr.type.pointee, ir.ArrayType):
                         zero = ir.Constant(ir.IntType(32), 0)
-                        array_addr = self.g_llvn_builder.gep(array_addr, [zero, zero], inbounds=True)
+                        array_addr = self.g_llvm_builder.gep(array_addr, [zero, zero], inbounds=True)
                     args.append(array_addr)
             args.append(ir.Constant(ir.IntType(32), 1))
             args.append(ir.Constant(ir.IntType(1), 0))
@@ -569,7 +629,7 @@ class LLVMGenerator(object):
                 return ir.ArrayType(arg, int(n.dim.value))
             elif typ == ast.FuncDecl:
                 if n.args:
-                    paramtypes = [self.generate_declaration(param, status=2) for param in n.args]
+                    paramtypes = [self.generate_declaration(param, status=2) for param in n.args.params]
                 else:
                     paramtypes = []
                 return ir.FunctionType(arg, paramtypes)
@@ -600,52 +660,76 @@ class LLVMGenerator(object):
             # return a variable declaration
 
             current = self.get_element(n.spec[0], None)
+            decl = motifiers.pop(0)
+            name = decl.name
             for m in motifiers:
                 current = self.get_element(m, current)
 
             if status == 0:
-                self.g_named_memory[n.name] = self.g_llvn_builder.alloca(current, name=n.name)
+                self.g_named_memory[n.name] = self.g_llvm_builder.alloca(current, name=name)
             elif status == 1:
-                self.g_global_variable[n.name] = \
-                    ir.GlobalVariable(self.g_llvm_module, current, name=n.name)
+                self.g_global_variable[name] = \
+                    ir.GlobalVariable(self.g_llvm_module, current, name=name)
+                self.g_global_variable[name].initializer = ir.Constant(current, None)
             elif status == 2:
                 if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
-                    function = ir.Function(self.g_llvm_module, current, name=n.name)
+                    function = ir.Function(self.g_llvm_module, current, name=name)
                     if motifiers[0].args:
-                        paranames = [param.name for param in motifiers[0].args]
+                        paranames = [param.name for param in motifiers[0].args.params]
                         for arg, arg_name in zip(function.args, paranames):
                             arg.name = arg_name
                             # Add arguments to variable symbol table.
                             self.g_named_argument[arg_name] = arg
+                            # Set signed extension for char
+                            if isinstance(arg.type, ir.IntType) and arg.type.width == 8:
+                                arg.add_attribute('signext')
+                    self.g_named_function[name] = function
                     return function
                 else:
                     return current
 
         elif typ == ast.Struct:
-            # return a type
             context = self.g_llvm_module.context
-            st = context.get_identified_type(n.name)
-            if status == 0:
-                return st
-            elif status == 1 and n.name not in self.g_type_define:
-                self.g_type_define[n.name] = [ele.name for ele in n.decls]
-                types = [self.generate_declaration(ele.type, status=2) for ele in n.decls]
-                st.set_body(*types)
-            else:
-                if len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
-                    function = ir.Function(self.g_llvm_module, st, name=n.name)
-                    paranames = [param.name for param in motifiers[0].args]
-                    for arg, arg_name in zip(function.args, paranames):
-                        arg.name = arg_name
-                        # Add arguments to variable symbol table.
-                        self.g_named_argument[arg_name] = arg
-                    return function
-                else:
-                    return st
+            current = context.get_identified_type(n.name)
 
-        elif typ in {ast.ArrayDecl, ast.FuncDecl, ast.PtrDecl}:
+            # define struct
+            if n.name not in self.g_type_define:
+                self.g_type_define[n.name] = [ele.name for ele in n.decls]
+                types = [self.generate_declaration(ele, status=2) for ele in n.decls]
+                current.set_body(*types)
+
+            decl = motifiers.pop(0)
+            name = decl.name
+            for m in motifiers:
+                current = self.get_element(m, current)
+
+            if status == 0:
+                return current
+            elif status == 1:
+                self.g_global_variable[name] = \
+                    ir.GlobalVariable(self.g_llvm_module, current, name=name)
+                self.g_global_variable[name].initializer = ir.Constant(current, None)
+
+            elif len(motifiers) > 0 and type(motifiers[0]) == ast.FuncDecl:
+                function = ir.Function(self.g_llvm_module, current, name=name)
+                paranames = [param.name for param in motifiers[0].args]
+                for arg, arg_name in zip(function.args, paranames):
+                    arg.name = arg_name
+                    # Add arguments to variable symbol table.
+                    self.g_named_argument[arg_name] = arg
+                self.g_named_function[name] = function
+                return function
+            else:
+                return current
+
+        elif typ in {ast.ArrayDecl, ast.FuncDecl, ast.PtrDecl, ast.Decl}:
             return self.generate_declaration(n.type, status, motifiers+[n])
 
+    def remove_quotes(self, str):
+        return str[1:-1]
+
+    def char2int(self, str):
+        return  ord(self.remove_quotes(str))
 
     # ---------- check & handle error ----------
 
