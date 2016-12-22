@@ -208,14 +208,15 @@ class LLVMGenerator(object):
         elif n.type == 'char':
             c = ir.Constant(ir.IntType(8), self.char2int(n.value))
         elif n.type == 'string':
-            str = self.remove_quotes(n.value)
-            typ = ir.ArrayType(ir.IntType(8), len(str))
-            # TODO: prevent duplicate global name!
-            tmp = ir.GlobalVariable(self.g_llvm_module, typ, name='.str')
-            tmp.initializer = ir.Constant(typ, bytearray(str))
+            string = self.remove_quotes(n.value)
+            string.replace('\\n', '\0A\00')
+            typ = ir.ArrayType(ir.IntType(8), len(string))
+            name = '.str' + str(len(self.g_global_variable))
+            tmp = ir.GlobalVariable(self.g_llvm_module, typ, name=name)
+            tmp.initializer = ir.Constant(typ, bytearray(string))
             tmp.global_constant = True
 
-            self.g_global_variable['.str'] = tmp
+            self.g_global_variable[name] = tmp
             zero = ir.Constant(ir.IntType(32), 0)
             return self.g_llvm_builder.gep(tmp, [zero, zero], inbounds=True)
         else:
@@ -352,7 +353,7 @@ class LLVMGenerator(object):
             return self.visit(n.expr, 0)
         elif (n.op == '!'):
             obj = self.visit(n.expr, 1)
-            return self.g_llvm_builder.icmp_signed('!=', obj, ir.Constant(obj.type, 0))
+            return self.g_llvm_builder.icmp_signed('==', obj, ir.Constant(obj.type, 0))
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
@@ -391,6 +392,35 @@ class LLVMGenerator(object):
         else:
             with self.g_llvm_builder.if_then(cond):
                 self.visit(n.iftrue)
+        # if n.iffalse:
+        #     iftrue = self.g_current_function.append_basic_block()
+        #     iffalse = self.g_current_function.append_basic_block()
+        #     ifend = self.g_current_function.append_basic_block()
+        #
+        #     self.g_llvm_builder.cbranch(cond, iftrue, iffalse)
+        #
+        #     self.g_llvm_builder.position_at_end(iftrue)
+        #     self.visit(n.iftrue)
+        #     if not iftrue.is_terminated:
+        #         self.g_llvm_builder.branch(ifend)
+        #
+        #     self.g_llvm_builder.position_at_end(iffalse)
+        #     self.visit(n.iffalse)
+        #     if not iffalse.is_terminated:
+        #         self.g_llvm_builder.branch(ifend)
+        #
+        #     self.g_llvm_builder.position_at_end(ifend)
+        # else:
+        #     iftrue = self.g_current_function.append_basic_block()
+        #     ifend = self.g_current_function.append_basic_block()
+        #
+        #     self.g_llvm_builder.cbranch(cond, iftrue, ifend)
+        #     self.g_llvm_builder.position_at_end(iftrue)
+        #     self.visit(n.iftrue)
+        #     if not iftrue.is_terminated:
+        #         self.g_llvm_builder.branch(ifend)
+        #
+        #     self.g_llvm_builder.position_at_end(ifend)
 
     def visit_While(self, n, status=0):
         while_cmp = self.g_current_function.append_basic_block()

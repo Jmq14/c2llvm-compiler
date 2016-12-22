@@ -1,6 +1,6 @@
 int lessPrior[6][6] = {{1, 1, 1, 1, 0, 1}, {1, 1, 1, 1, 0, 1},
-                      {0, 0, 1, 1, 0, 1}, {0, 0, 1, 1, 0, 1},
-                      {0, 0, 0, 0, 0, 1}, {1, 1, 1, 1, 0, 1}};
+    {0, 0, 1, 1, 0, 1}, {0, 0, 1, 1, 0, 1},
+    {0, 0, 0, 0, 0, 1}, {1, 1, 1, 1, 0, 1}};
 
 struct SqStack {
     int val[1000];
@@ -26,24 +26,25 @@ int top(struct SqStack *stk) { return stk->val[stk->cur - 1]; }
 int isEmpty(struct SqStack *stk) { return stk->cur == 0; }
 
 int indexOf(char ch) {
-    if (ch=='+') return 0;
+    int index;
+    if (ch=='+') index = 0;
     else {
-        if (ch=='-') return 1;
+        if (ch=='-') index = 1;
         else {
-            if (ch=='*') return 2;
+            if (ch=='*') index = 2;
             else {
-                if (ch=='/') return 3;
+                if (ch=='/') index = 3;
                 else {
-                    if (ch=='(') return 4;
+                    if (ch=='(') index = 4;
                     else {
-                        if (ch==')') return 5;
-                        else return 233;
+                        if (ch==')') index = 5;
+                        else index = 233;
                     }
                 }
             }
         }
     }
-    return 233;
+    return index;
 }
 
 void sendOp(char op) {
@@ -78,8 +79,9 @@ int main() {
             push(&value, atoi(buff));
             continue;
         }
-        while (!isEmpty(&op) && lessPrior[indexOf(str[i])][indexOf(top(&op))])
+        while (!isEmpty(&op) && lessPrior[indexOf(str[i])][indexOf(top(&op))]){
             sendOp(pop(&op));
+        }
         if ((str[i] == ')') && (top(&op) == '(')) {
             pop(&op);
             i = i + 1;
@@ -93,7 +95,6 @@ int main() {
     }
     while (!isEmpty(&op))
         sendOp(pop(&op));
-    
     int out = pop(&value);
     printf("%d\n", out);
     return 0;
