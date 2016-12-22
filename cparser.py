@@ -254,7 +254,7 @@ class CParser(object):
         """ argument_expression_list    : assignment_expression
                                         | argument_expression_list COMMA assignment_expression
         """
-        if len(p) == 2: # single expr
+        if len(p) == 2:  # single expr
             p[0] = ast.ExprList([p[1]])
         else:
             p[1].exprs.append(p[3])
@@ -349,7 +349,7 @@ class CParser(object):
             p[2]['qual'].insert(0, p[1])
             p[0] = p[2]
         else:
-            p[0]=dict(qual=[p[1]], spec=[], storage=[])
+            p[0] = dict(qual=[p[1]], spec=[], storage=[])
 
     def p_declaration_specifiers_2(self, p):
         """ declaration_specifiers  : type_specifier declaration_specifiers_opt
@@ -358,7 +358,7 @@ class CParser(object):
             p[2]['spec'].insert(0, p[1])
             p[0] = p[2]
         else:
-            p[0]=dict(qual=[], spec=[p[1]], storage=[])
+            p[0] = dict(qual=[], spec=[p[1]], storage=[])
 
     def p_declaration_specifiers_3(self, p):
         """ declaration_specifiers  : storage_class_specifier declaration_specifiers_opt
@@ -367,7 +367,7 @@ class CParser(object):
             p[2]['storage'].insert(0, p[1])
             p[0] = p[2]
         else:
-            p[0]=dict(qual=[], spec=[], storage=[p[1]])
+            p[0] = dict(qual=[], spec=[], storage=[p[1]])
 
     def p_specifier_qualifier_list_1(self, p):
         """ specifier_qualifier_list    : type_qualifier specifier_qualifier_list_opt
@@ -376,7 +376,7 @@ class CParser(object):
             p[2]['qual'].insert(0, p[1])
             p[0] = p[2]
         else:
-            p[0]=dict(qual=[p[1]], spec=[], storage=[])
+            p[0] = dict(qual=[p[1]], spec=[], storage=[])
 
     def p_specifier_qualifier_list_2(self, p):
         """ specifier_qualifier_list    : type_specifier specifier_qualifier_list_opt
@@ -385,7 +385,7 @@ class CParser(object):
             p[2]['spec'].insert(0, p[1])
             p[0] = p[2]
         else:
-            p[0]=dict(qual=[], spec=[p[1]], storage=[])
+            p[0] = dict(qual=[], spec=[p[1]], storage=[])
 
     def p_declaration(self, p):
         """ declaration : declaration_specifiers init_declarator_list_opt SEMI
@@ -541,7 +541,7 @@ class CParser(object):
 
     def p_identifier(self, p):
         """ identifier  : ID """
-        p[0] = ast.IdentifierType(name=p[1],spec=None)
+        p[0] = ast.IdentifierType(name=p[1], spec=None)
 
     def p_identifier_list(self, p):
         """ identifier_list : identifier
@@ -685,7 +685,7 @@ class CParser(object):
         """ postfix_expression  : postfix_expression PERIOD identifier
                                 | postfix_expression ARROW identifier
         """
-        field = ast.IdentifierType(name=p[3],spec=None)
+        field = ast.IdentifierType(name=p[3], spec=None)
         p[0] = ast.StructRef(p[1], p[2], field)
 
     def p_postfix_expression_5(self, p):
@@ -810,7 +810,7 @@ class CParser(object):
         """ unified_string_literal  : STRING_LITERAL
                                     | unified_string_literal STRING_LITERAL
         """
-        if len(p) == 2: # single literal
+        if len(p) == 2:  # single literal
             p[0] = ast.Constant(
                 'string', p[1])
         else:
@@ -909,7 +909,7 @@ class CParser(object):
         """
         spec_qual = p[1]
         struct = None
-        if isinstance(spec_qual['spec'][0],ast.Struct):
+        if isinstance(spec_qual['spec'][0], ast.Struct):
             struct = spec_qual['spec'][0]
         struct_decl_list = p[2]
 
@@ -942,7 +942,7 @@ class CParser(object):
                 type = struct_decl
                 while not isinstance(type, ast.IdentifierType):
                     type = type.type
-                type.spec = spec_qual['spec'][0]
+                type.spec = spec_qual['spec']
                 decl = ast.Decl(
                     name=type.name,
                     quals=spec_qual['qual'],
@@ -958,8 +958,6 @@ class CParser(object):
         """
         p[0] = p[1] + [p[3]] if len(p) == 4 else [p[1]]
 
-
-
     def p_error(self, p):
         # If error recovery is added here in the future, make sure
         # _get_yacc_lookahead_token still works!
@@ -973,4 +971,3 @@ class CParser(object):
 
 
 class ParseError(Exception): pass
-
