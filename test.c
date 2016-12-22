@@ -1,6 +1,6 @@
 int lessPrior[6][6] = {{1, 1, 1, 1, 0, 1}, {1, 1, 1, 1, 0, 1},
-                      {0, 0, 1, 1, 0, 1}, {0, 0, 1, 1, 0, 1},
-                      {0, 0, 0, 0, 0, 1}, {1, 1, 1, 1, 0, 1}};
+    {0, 0, 1, 1, 0, 1}, {0, 0, 1, 1, 0, 1},
+    {0, 0, 0, 0, 0, 1}, {1, 1, 1, 1, 0, 1}};
 
 struct SqStack {
     int val[1000];
@@ -43,11 +43,11 @@ void sendOp(char op) {
     int right = pop(&value);
     if (op=='+') push(&value, pop(&value) + right);
     else {
-        if (ch=='-') push(&value, pop(&value) - right);
+        if (op=='-') push(&value, pop(&value) - right);
         else {
-            if (ch=='*') push(&value, pop(&value) * right);
+            if (op=='*') push(&value, pop(&value) * right);
             else {
-                if (ch=='/') push(&value, pop(&value) / right);
+                if (op=='/') push(&value, pop(&value) / right);
             }
         }
     }
@@ -56,8 +56,7 @@ void sendOp(char op) {
 int main() {
     init(&value);
     init(&op);
-    char str[101];
-    gets(str);
+    char str[101]="1+(5-2)*4/(2+1)";
     int i = 0;
     while (str[i]) {
         if (isdigit(str[i])) {
