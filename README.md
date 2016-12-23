@@ -37,3 +37,14 @@ First edit the header of the .ll file and input your target datalayout and targe
 Then,
 
 `lli-3.8 [output .ll file]`
+
+## Tests
+As the project assignment requires, our compiler should compile and pass 3 tests: 
+
+1. palindrome string check
+
+2. KMP string matching
+
+3. four arithmetic operations. 
+
+Test C code and generated LLVM IR are provided in `Tests/`
