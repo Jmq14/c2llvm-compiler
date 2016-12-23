@@ -368,8 +368,9 @@ class LLVMGenerator(object):
             obj = self.visit(n.expr, 1)
             return self.g_llvm_builder.icmp_signed('==', obj, ir.Constant(obj.type, 0))
         elif (n.op == '*'):
-            ptr = self.visit(n.expr, 1)
-            pass
+            return self.visit(n.expr, 1)
+        elif (n.op == '-'):
+            return self.g_llvm_builder.neg(self.visit(n.expr, 1))
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
