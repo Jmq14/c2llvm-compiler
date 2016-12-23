@@ -1,3 +1,4 @@
+#-*- encoding: utf-8 -*-
 #------------------------------------------------------------------------------
 # llvm_generator.py
 #
@@ -83,6 +84,15 @@ class LLVMGenerator(object):
         if n.init:
             if status == 0:
                 self.g_llvm_builder.store(self.visit(n.init, 1), self.g_named_memory[n.name])
+                # ptr = self.g_named_memory[n.name]
+                # val_ptr = self.visit(n.init, 1)
+                # # [type]* = [arr address]
+                # if isinstance(val_ptr.type.pointee, ir.ArrayType):
+                #     zero = ir.Constant(ir.IntType(32), 0)
+                #     val = self.g_llvm_builder.gep(val_ptr, [zero, zero], inbounds=True)
+                #     self.g_llvm_builder.store(val, ptr)
+                # else:
+                #     self.g_llvm_builder.store(self.g_llvm_builder.load(val_ptr), ptr)
             elif status == 1:
                 self.g_global_variable[n.name].initializer = self.visit(n.init, n.name)
         else:
@@ -209,7 +219,8 @@ class LLVMGenerator(object):
             c = ir.Constant(ir.IntType(8), self.char2int(n.value))
         elif n.type == 'string':
             string = self.remove_quotes(n.value)
-            string.replace('\\n', '\0A\00')
+            string = string.replace('\\n', '\n')
+            string += '\0'
             typ = ir.ArrayType(ir.IntType(8), len(string))
             name = '.str' + str(len(self.g_global_variable))
             tmp = ir.GlobalVariable(self.g_llvm_module, typ, name=name)
@@ -320,11 +331,13 @@ class LLVMGenerator(object):
             left = ir.Constant(ir.IntType(32), 0).bitcast(right.type)
         if n.op == '+':
             # ptr + int: get the address
-            if isinstance(left.type, ir.PointerType) and \
-                    isinstance(left.type.pointee, ir.ArrayType):
-                zero = ir.Constant(ir.IntType(32), 0)
-                first_addr = self.g_llvm_builder.gep(left, [zero, zero], inbounds=True)
-                return self.g_llvm_builder.gep(first_addr, [right], inbounds=True)
+            if isinstance(left.type, ir.PointerType):
+                if isinstance(left.type.pointee, ir.ArrayType):
+                    zero = ir.Constant(ir.IntType(32), 0)
+                    first_addr = self.g_llvm_builder.gep(left, [zero, zero], inbounds=True)
+                    return self.g_llvm_builder.gep(first_addr, [right], inbounds=True)
+                elif isinstance(left.type.pointee, ir.IntType):
+                    pass
 
             return self.g_llvm_builder.add(left, right)
         elif n.op == '-':
@@ -354,6 +367,9 @@ class LLVMGenerator(object):
         elif (n.op == '!'):
             obj = self.visit(n.expr, 1)
             return self.g_llvm_builder.icmp_signed('==', obj, ir.Constant(obj.type, 0))
+        elif (n.op == '*'):
+            ptr = self.visit(n.expr, 1)
+            pass
 
     def visit_FuncCall(self, n, status=0):
         func_name = n.name.name
@@ -614,7 +630,7 @@ class LLVMGenerator(object):
             return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
         if n.name.name == 'isdigit':
-            func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(32)], var_arg=True)
+            func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(32)], var_arg=False)
             args = []
             for arg in n.args.exprs:
                 ext = self.g_llvm_builder.sext(self.visit(arg, status=1), ir.IntType(32))
@@ -649,6 +665,16 @@ class LLVMGenerator(object):
             pint8 = ir.PointerType(ir.IntType(8))
             k = self.g_llvm_module.declare_intrinsic('llvm.memcpy', [pint8, pint8, ir.IntType(32)]), args
             return k
+
+        if n.name.name == 'strlen':
+            func_type = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()], var_arg=False)
+            args = []
+            for arg in n.args.exprs:
+                zero = ir.Constant(ir.IntType(32), 0)
+                ptr = self.g_llvm_builder.gep(self.visit(arg, status=0), [zero, zero], inbounds=True)
+                args.append(ptr)
+
+            return self.g_llvm_module.declare_intrinsic(n.name.name, (), func_type), args
 
     def get_element(self, n, arg=None):
         if arg:
